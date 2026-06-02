@@ -1,0 +1,156 @@
+from datetime import datetime
+from typing import Any
+
+import httpx
+from psycopg.types.json import Jsonb
+
+from backend.db.connection import get_connection
+
+
+GAMMA_MARKETS_URL = "https://gamma-api.polymarket.com/markets"
+
+
+def _parse_datetime(value: str | None):
+    if not value:
+        return None
+
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except Exception:
+        return None
+
+
+def _to_float(value: Any):
+    if value is None:
+        return None
+
+    try:
+        return float(value)
+    except Exception:
+        return None
+
+
+async def fetch_markets(limit: int = 100) -> list[dict[str, Any]]:
+    params = {
+        "active": "true",
+        "closed": "false",
+        "limit": limit,
+    }
+
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(GAMMA_MARKETS_URL, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+    if isinstance(data, list):
+        return data
+
+    return data.get("markets", [])
+
+
+async def sync_markets(limit: int = 100) -> dict[str, Any]:
+    markets = await fetch_markets(limit=limit)
+
+    inserted_or_updated = 0
+    snapshots_inserted = 0
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            for item in markets:
+                polymarket_id = str(
+                    item.get("id")
+                    or item.get("conditionId")
+                    or item.get("slug")
+                )
+
+                question = (
+                    item.get("question")
+                    or item.get("title")
+                    or item.get("slug")
+                    or "Untitled market"
+                )
+
+                description = item.get("description")
+                category = item.get("category")
+                active = bool(item.get("active", True))
+                closed = bool(item.get("closed", False))
+                end_date = _parse_datetime(item.get("endDate") or item.get("endDateIso"))
+
+                cur.execute(
+                    """
+                    INSERT INTO markets (
+                        polymarket_id,
+                        question,
+                        description,
+                        category,
+                        active,
+                        closed,
+                        end_date,
+                        updated_at
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, NOW())
+                    ON CONFLICT (polymarket_id)
+                    DO UPDATE SET
+                        question = EXCLUDED.question,
+                        description = EXCLUDED.description,
+                        category = EXCLUDED.category,
+                        active = EXCLUDED.active,
+                        closed = EXCLUDED.closed,
+                        end_date = EXCLUDED.end_date,
+                        updated_at = NOW()
+                    RETURNING id;
+                    """,
+                    (
+                        polymarket_id,
+                        question,
+                        description,
+                        category,
+                        active,
+                        closed,
+                        end_date,
+                    ),
+                )
+
+                market_id = cur.fetchone()[0]
+                inserted_or_updated += 1
+
+                yes_price = _to_float(item.get("bestAsk") or item.get("lastTradePrice"))
+                no_price = None
+
+                if yes_price is not None:
+                    no_price = round(1 - yes_price, 4)
+
+                volume = _to_float(item.get("volume") or item.get("volumeNum"))
+                liquidity = _to_float(item.get("liquidity") or item.get("liquidityNum"))
+
+                cur.execute(
+                    """
+                    INSERT INTO market_snapshots (
+                        market_id,
+                        yes_price,
+                        no_price,
+                        volume,
+                        liquidity,
+                        raw
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s);
+                    """,
+                    (
+                        market_id,
+                        yes_price,
+                        no_price,
+                        volume,
+                        liquidity,
+                        Jsonb(item),
+                    ),
+                )
+
+                snapshots_inserted += 1
+
+        conn.commit()
+
+    return {
+        "fetched": len(markets),
+        "markets_inserted_or_updated": inserted_or_updated,
+        "snapshots_inserted": snapshots_inserted,
+    }
