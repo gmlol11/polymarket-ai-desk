@@ -13,9 +13,12 @@ SPORT_KEYWORDS = [
 
 MEME_KEYWORDS = [
     "jesus",
+    "album before",
+]
+
+WEAK_PROXY_KEYWORDS = [
     "gta",
     "before gta",
-    "album before",
 ]
 
 CRYPTO_KEYWORDS = [
@@ -32,14 +35,13 @@ GEOPOLITICS_KEYWORDS = [
     "president",
     "election",
     "war",
+    "invade",
+    "invades",
 ]
 
 
 def classify_market(question: str) -> str:
     q = question.lower()
-
-    if any(keyword in q for keyword in MEME_KEYWORDS):
-        return "meme"
 
     if any(keyword in q for keyword in SPORT_KEYWORDS):
         return "sports"
@@ -50,11 +52,15 @@ def classify_market(question: str) -> str:
     if any(keyword in q for keyword in GEOPOLITICS_KEYWORDS):
         return "politics"
 
+    if any(keyword in q for keyword in MEME_KEYWORDS):
+        return "meme"
+
     return "unknown"
 
 
 def score_market(market: dict[str, Any]) -> dict[str, Any]:
     question = market.get("question") or ""
+    q = question.lower()
     category_guess = classify_market(question)
 
     liquidity = float(market.get("liquidity") or 0)
@@ -90,6 +96,10 @@ def score_market(market: dict[str, Any]) -> dict[str, Any]:
     else:
         score -= 10
         reasons.append("price is too close to edge")
+
+    if any(keyword in q for keyword in WEAK_PROXY_KEYWORDS):
+        score -= 20
+        reasons.append("weak proxy / unusual resolution framing")
 
     if category_guess == "meme":
         score -= 50
