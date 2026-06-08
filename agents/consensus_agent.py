@@ -1,0 +1,114 @@
+from datetime import datetime, timezone
+from typing import Any
+
+
+SCHEMA_VERSION = "1.0"
+
+MIN_EDGE_TO_BET = 0.05
+MIN_CONFIDENCE_TO_BET = 0.60
+MIN_EDGE_TO_WATCH = 0.02
+
+
+def _consensus_probability(claude_prob: float, gemini_prob: float) -> float:
+    return round((claude_prob + gemini_prob) / 2, 4)
+
+
+def _edge(consensus_prob: float, market_prob: float, recommended_side: str) -> float:
+    if recommended_side == "YES":
+        return round(consensus_prob - market_prob, 4)
+    if recommended_side == "NO":
+        return round((1 - market_prob) - (1 - consensus_prob), 4)
+    return 0.0
+
+
+def _resolve_side(claude_side: str, gemini_side: str, consensus_prob: float, market_prob: float) -> str:
+    if claude_side == gemini_side and claude_side in ("YES", "NO"):
+        return claude_side
+    # disagreement — fall back to whether consensus is above or below market
+    if consensus_prob > market_prob:
+        return "YES"
+    if consensus_prob < market_prob:
+        return "NO"
+    return "NONE"
+
+
+def _average_confidence(claude_confidence: float, gemini_confidence: float) -> float:
+    return round((claude_confidence + gemini_confidence) / 2, 4)
+
+
+def _make_decision(edge: float, confidence: float, modelable: bool) -> str:
+    if not modelable:
+        return "SKIP"
+    if edge >= MIN_EDGE_TO_BET and confidence >= MIN_CONFIDENCE_TO_BET:
+        return "BET"
+    if edge >= MIN_EDGE_TO_WATCH:
+        return "WATCH"
+    if edge < 0:
+        return "SKIP"
+    return "NEEDS_MORE_RESEARCH"
+
+
+def _decision_reason(decision: str, edge: float, confidence: float, modelable: bool) -> str:
+    if not modelable:
+        return "Market is not modelable."
+    if decision == "BET":
+        return f"Edge {edge:.3f} and confidence {confidence:.2f} meet thresholds."
+    if decision == "WATCH":
+        if confidence < MIN_CONFIDENCE_TO_BET:
+            return f"Edge {edge:.3f} is acceptable but confidence {confidence:.2f} is below threshold."
+        return f"Edge {edge:.3f} too small to bet."
+    if decision == "SKIP":
+        return f"No positive edge (edge={edge:.3f})."
+    return "Conflicting signals between analyst and challenger."
+
+
+def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market: dict[str, Any]) -> dict[str, Any]:
+    market_prob = float(market.get("yes_price") or 0)
+    modelable = market.get("research", {}).get("modelable", True)
+
+    claude_prob = float(analyst.get("estimated_probability") or 0)
+    gemini_prob = float(challenger.get("estimated_probability") or 0)
+    claude_side = analyst.get("recommended_side") or "NONE"
+    gemini_side = challenger.get("recommended_side") or "NONE"
+    claude_confidence = float(analyst.get("confidence") or 0)
+    gemini_confidence = float(challenger.get("confidence") or 0)
+
+    consensus_prob = _consensus_probability(claude_prob, gemini_prob)
+    recommended_side = _resolve_side(claude_side, gemini_side, consensus_prob, market_prob)
+    edge = _edge(consensus_prob, market_prob, recommended_side)
+    confidence = _average_confidence(claude_confidence, gemini_confidence)
+    decision = _make_decision(edge, confidence, modelable)
+
+    return {
+        "schema_version": SCHEMA_VERSION,
+        "agent_name": "consensus_agent",
+        "market_id": market.get("id"),
+        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "market_probability": round(market_prob, 4),
+        "claude_probability": claude_prob,
+        "gemini_probability": gemini_prob,
+        "consensus_probability": consensus_prob,
+        "edge": edge,
+        "confidence": confidence,
+        "recommended_side": recommended_side,
+        "decision": decision,
+        "reason": _decision_reason(decision, edge, confidence, modelable),
+    }
+
+
+def run_consensus(
+    markets_with_analyses: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """
+    Expects each item to have:
+      - market fields (id, yes_price, research, ...)
+      - "analyst": claude_analyst output dict
+      - "challenger": gemini_challenger output dict
+    """
+    results = []
+    for item in markets_with_analyses:
+        analyst = item.get("analyst") or {}
+        challenger = item.get("challenger") or {}
+        consensus = build_consensus(analyst, challenger, item)
+        results.append({**item, "consensus": consensus})
+    return results

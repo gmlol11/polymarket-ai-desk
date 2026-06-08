@@ -5,6 +5,9 @@ import redis
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 
+from agents.claude_analyst import analyze_markets
+from agents.consensus_agent import run_consensus
+from agents.gemini_challenger import challenge_markets
 from agents.research_agent import research_markets
 from agents.simple_filter import score_markets
 from backend.collectors.polymarket import sync_markets
@@ -169,3 +172,23 @@ def research_agent(limit: int = 20):
     candidates = get_candidates(limit=limit)
     scored = score_markets(candidates)
     return research_markets(scored)
+
+
+@app.get("/agents/analyze")
+async def analyze_agent(limit: int = 10):
+    candidates = get_candidates(limit=limit)
+    scored = score_markets(candidates)
+    researched = research_markets(scored)
+    modelable = [m for m in researched if m.get("research", {}).get("modelable", False)]
+    return analyze_markets(modelable)
+
+
+@app.get("/agents/consensus")
+async def consensus_agent(limit: int = 10):
+    candidates = get_candidates(limit=limit)
+    scored = score_markets(candidates)
+    researched = research_markets(scored)
+    modelable = [m for m in researched if m.get("research", {}).get("modelable", False)]
+    with_analyst = analyze_markets(modelable)
+    with_challenger = challenge_markets(with_analyst)
+    return run_consensus(with_challenger)
