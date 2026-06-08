@@ -238,6 +238,28 @@ def get_paper_weekly_report(days: int = 7) -> dict[str, Any]:
                 "NO": report.pop("no_count"),
             }
 
+            # ── Category breakdown (uses stored category_guess, migration 005) ──
+            try:
+                cur.execute(
+                    """
+                    SELECT COALESCE(category_guess, 'unknown') AS category,
+                           COUNT(*) AS n,
+                           COUNT(*) FILTER (WHERE decision = 'BET') AS bet
+                    FROM consensus_decisions
+                    WHERE created_at >= NOW() - (%s * INTERVAL '1 day')
+                    GROUP BY 1
+                    ORDER BY n DESC
+                    """,
+                    (days,),
+                )
+                report["category_breakdown"] = [
+                    {"category": r[0], "decisions": r[1], "bets": r[2]}
+                    for r in cur.fetchall()
+                ]
+            except Exception:
+                conn.rollback()
+                report["category_breakdown"] = "unavailable_apply_migration_005"
+
             # ── Paper trade aggregates ─────────────────────────────────────
             cur.execute(
                 """

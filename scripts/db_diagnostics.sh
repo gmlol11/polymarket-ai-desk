@@ -16,6 +16,13 @@ psql_q() {
     docker exec -i "$CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -P pager=off "$@"
 }
 
+# Non-fatal variant: a query that depends on an unapplied migration prints a
+# hint instead of aborting the whole script (set -e).
+psql_opt() {
+    docker exec -i "$CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -P pager=off "$@" \
+        || echo "  (query failed — a required migration may not be applied yet)"
+}
+
 echo "============================================================"
 echo " Polymarket AI Desk — DB diagnostics"
 echo " container=$CONTAINER db=$DB_NAME"
@@ -95,17 +102,20 @@ LIMIT 10;
 
 echo ""
 echo "── Analyzed category coverage (diversity check) ────────────"
-psql_q -c "
-SELECT COALESCE(NULLIF(m.category, ''), 'unknown') AS category, COUNT(*) AS decisions
-FROM consensus_decisions cd
-LEFT JOIN markets m ON m.id = cd.market_id
+echo " (uses stored category_guess — apply migration 005 first;"
+echo "  decisions made before 005 will show as NULL/unknown)"
+psql_opt -c "
+SELECT COALESCE(category_guess, 'unknown (pre-005)') AS category,
+       COUNT(*) AS decisions,
+       COUNT(*) FILTER (WHERE decision = 'BET') AS bets
+FROM consensus_decisions
 GROUP BY 1
 ORDER BY decisions DESC;
 "
 
 echo ""
-echo "── Paper trades summary ────────────────────────────────────"
-psql_q -c "
+echo "── Paper trades summary (unrealized_pnl needs migration 004) ──"
+psql_opt -c "
 SELECT
     COUNT(*)                                   AS total,
     COUNT(*) FILTER (WHERE status='open')      AS open,

@@ -1,5 +1,6 @@
 from typing import Any
 
+import psycopg
 from psycopg.types.json import Jsonb
 
 from backend.db.connection import get_connection
@@ -38,33 +39,67 @@ def save_consensus_decision(
     market_id: int,
     consensus_output: dict[str, Any],
 ) -> int:
-    """Inserts a consensus decision and returns its DB id."""
+    """
+    Inserts a consensus decision and returns its DB id.
+
+    Includes category_guess if the column exists (migration 005). Falls back to
+    the pre-005 schema automatically so the runner keeps working before the
+    migration is applied.
+    """
     with get_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute(
-                """
-                INSERT INTO consensus_decisions
-                    (market_id, market_probability, claude_probability,
-                     challenger_probability, consensus_probability,
-                     edge, confidence, recommended_side, decision, reason,
-                     output_json)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
-                """,
-                (
-                    market_id,
-                    consensus_output.get("market_probability"),
-                    consensus_output.get("claude_probability"),
-                    consensus_output.get("challenger_probability"),
-                    consensus_output.get("consensus_probability"),
-                    consensus_output.get("edge"),
-                    consensus_output.get("confidence"),
-                    consensus_output.get("recommended_side"),
-                    consensus_output.get("decision"),
-                    consensus_output.get("reason"),
-                    Jsonb(consensus_output),
-                ),
-            )
+            try:
+                cur.execute(
+                    """
+                    INSERT INTO consensus_decisions
+                        (market_id, market_probability, claude_probability,
+                         challenger_probability, consensus_probability,
+                         edge, confidence, recommended_side, decision, reason,
+                         category_guess, output_json)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                    """,
+                    (
+                        market_id,
+                        consensus_output.get("market_probability"),
+                        consensus_output.get("claude_probability"),
+                        consensus_output.get("challenger_probability"),
+                        consensus_output.get("consensus_probability"),
+                        consensus_output.get("edge"),
+                        consensus_output.get("confidence"),
+                        consensus_output.get("recommended_side"),
+                        consensus_output.get("decision"),
+                        consensus_output.get("reason"),
+                        consensus_output.get("category_guess"),
+                        Jsonb(consensus_output),
+                    ),
+                )
+            except psycopg.errors.UndefinedColumn:
+                conn.rollback()
+                cur.execute(
+                    """
+                    INSERT INTO consensus_decisions
+                        (market_id, market_probability, claude_probability,
+                         challenger_probability, consensus_probability,
+                         edge, confidence, recommended_side, decision, reason,
+                         output_json)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    RETURNING id
+                    """,
+                    (
+                        market_id,
+                        consensus_output.get("market_probability"),
+                        consensus_output.get("claude_probability"),
+                        consensus_output.get("challenger_probability"),
+                        consensus_output.get("consensus_probability"),
+                        consensus_output.get("edge"),
+                        consensus_output.get("confidence"),
+                        consensus_output.get("recommended_side"),
+                        consensus_output.get("decision"),
+                        consensus_output.get("reason"),
+                        Jsonb(consensus_output),
+                    ),
+                )
             decision_id = cur.fetchone()[0]
         conn.commit()
     return decision_id

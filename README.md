@@ -212,11 +212,16 @@ curl -X POST "http://127.0.0.1:8000/jobs/run-once-notify" | python3 -m json.tool
 curl -X POST "http://127.0.0.1:8000/jobs/run-once" | python3 -m json.tool
 ```
 
-### Apply mark-to-market migration (run once)
+### Apply migrations (run once)
 
 ```bash
+# Mark-to-market columns on paper_trades
 docker exec -i polymarket_postgres psql -U polymarket_user -d polymarket_ai_desk \
     < database/004_paper_mark_to_market.sql
+
+# category_guess on consensus_decisions (enables category breakdown in reports)
+docker exec -i polymarket_postgres psql -U polymarket_user -d polymarket_ai_desk \
+    < database/005_decision_category.sql
 ```
 
 ### Install launchd automation (macOS)

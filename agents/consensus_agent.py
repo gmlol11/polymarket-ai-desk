@@ -97,6 +97,7 @@ def _decision_reason(
 def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market: dict[str, Any]) -> dict[str, Any]:
     market_prob = float(market.get("yes_price") or 0)
     modelable = market.get("research", {}).get("modelable", True)
+    category_guess = market.get("category_guess", "unknown")
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     analyst_failed = "error" in analyst
@@ -107,6 +108,7 @@ def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market:
             "schema_version": SCHEMA_VERSION,
             "agent_name": "consensus_agent",
             "market_id": market.get("id"),
+            "category_guess": category_guess,
             "generated_at": now,
             "market_probability": round(market_prob, 4),
             "decision": "NEEDS_MORE_RESEARCH",
@@ -129,6 +131,7 @@ def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market:
             "schema_version": SCHEMA_VERSION,
             "agent_name": "consensus_agent",
             "market_id": market.get("id"),
+            "category_guess": category_guess,
             "generated_at": now,
             "market_probability": round(market_prob, 4),
             "claude_probability": claude_prob,
@@ -157,6 +160,7 @@ def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market:
         "schema_version": SCHEMA_VERSION,
         "agent_name": "consensus_agent",
         "market_id": market.get("id"),
+        "category_guess": category_guess,
         "generated_at": now,
         "market_probability": round(market_prob, 4),
         "claude_probability": claude_prob,
