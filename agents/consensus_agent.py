@@ -65,12 +65,51 @@ def _decision_reason(decision: str, edge: float, confidence: float, modelable: b
 def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market: dict[str, Any]) -> dict[str, Any]:
     market_prob = float(market.get("yes_price") or 0)
     modelable = market.get("research", {}).get("modelable", True)
+    now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    analyst_failed = "error" in analyst
+    challenger_failed = "error" in challenger
+
+    if analyst_failed:
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "agent_name": "consensus_agent",
+            "market_id": market.get("id"),
+            "generated_at": now,
+            "market_probability": round(market_prob, 4),
+            "decision": "NEEDS_MORE_RESEARCH",
+            "reason": f"Analyst failed: {analyst.get('error', 'unknown error')}",
+        }
 
     claude_prob = float(analyst.get("estimated_probability") or 0)
-    gemini_prob = float(challenger.get("estimated_probability") or 0)
     claude_side = analyst.get("recommended_side") or "NONE"
-    gemini_side = challenger.get("recommended_side") or "NONE"
     claude_confidence = float(analyst.get("confidence") or 0)
+
+    if challenger_failed:
+        # Fall back to analyst-only consensus, lower confidence to reflect missing challenger
+        consensus_prob = claude_prob
+        recommended_side = claude_side
+        edge = _edge(consensus_prob, market_prob, recommended_side)
+        confidence = round(claude_confidence * 0.75, 4)
+        decision = _make_decision(edge, confidence, modelable)
+        return {
+            "schema_version": SCHEMA_VERSION,
+            "agent_name": "consensus_agent",
+            "market_id": market.get("id"),
+            "generated_at": now,
+            "market_probability": round(market_prob, 4),
+            "claude_probability": claude_prob,
+            "gemini_probability": None,
+            "consensus_probability": consensus_prob,
+            "edge": edge,
+            "confidence": confidence,
+            "recommended_side": recommended_side,
+            "decision": decision,
+            "reason": f"Challenger unavailable — analyst-only. {_decision_reason(decision, edge, confidence, modelable)}",
+        }
+
+    gemini_prob = float(challenger.get("estimated_probability") or 0)
+    gemini_side = challenger.get("recommended_side") or "NONE"
     gemini_confidence = float(challenger.get("confidence") or 0)
 
     consensus_prob = _consensus_probability(claude_prob, gemini_prob)
@@ -83,7 +122,7 @@ def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market:
         "schema_version": SCHEMA_VERSION,
         "agent_name": "consensus_agent",
         "market_id": market.get("id"),
-        "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at": now,
         "market_probability": round(market_prob, 4),
         "claude_probability": claude_prob,
         "gemini_probability": gemini_prob,
