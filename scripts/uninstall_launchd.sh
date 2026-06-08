@@ -1,33 +1,35 @@
 #!/usr/bin/env bash
-# uninstall_launchd.sh — Unload and remove launchd agents.
+# uninstall_launchd.sh — Boot out and remove launchd agents (modern macOS).
 #
-# Stops both services and removes their plist files from ~/Library/LaunchAgents/.
-# Does NOT delete logs, DB data, or project files.
+# Uses `launchctl bootout` (the counterpart to bootstrap). Does NOT delete
+# logs, DB data, or project files.
 
 set -euo pipefail
 
 LAUNCHD_AGENTS="$HOME/Library/LaunchAgents"
+UID_NUM="$(id -u)"
+DOMAIN="gui/$UID_NUM"
 
 LABELS=(
     "com.polymarket-ai.backend"
     "com.polymarket-ai.daily-experiment"
 )
 
-echo "Uninstalling Polymarket AI Desk launchd agents..."
+echo "Uninstalling Polymarket AI Desk launchd agents (domain $DOMAIN)..."
 echo ""
 
 for LABEL in "${LABELS[@]}"; do
     PLIST="$LAUNCHD_AGENTS/$LABEL.plist"
+
+    launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null \
+        && echo "  Booted out: $LABEL" \
+        || echo "  (not loaded: $LABEL)"
+
     if [[ -f "$PLIST" ]]; then
-        launchctl unload "$PLIST" 2>&1 && echo "  Unloaded: $LABEL" || \
-            echo "  WARN: unload failed for $LABEL (was it loaded?)"
         rm -f "$PLIST"
-        echo "  Removed:  $PLIST"
-    else
-        echo "  Skipped:  $PLIST (not found)"
+        echo "  Removed:    $PLIST"
     fi
 done
 
 echo ""
-echo "Done. Both agents are removed."
-echo "Logs remain in the project's logs/ directory."
+echo "Done. Both agents are removed. Logs preserved in logs/."

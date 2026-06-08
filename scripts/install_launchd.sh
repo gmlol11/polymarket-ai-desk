@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
-# install_launchd.sh — Install and load both launchd agents.
+# install_launchd.sh — Install and load both launchd agents (modern macOS).
+#
+# Uses `launchctl bootstrap` (Ventura/Sonoma/Sequoia) instead of the legacy
+# `launchctl load`, which fails with "Input/output error" on recent macOS.
 #
 # What it does:
-#   1. Copies plist templates from launchd/ to ~/Library/LaunchAgents/
-#   2. Replaces __PROJECT_PATH__ placeholder with the actual project path
-#   3. Loads both agents (backend keep-alive + daily 10:00 experiment)
+#   1. Copies plist templates to ~/Library/LaunchAgents/ with __PROJECT_PATH__
+#      replaced by the real project path
+#   2. Boots out any previous instance, then bootstraps + enables each agent
 #
-# Run only once. To update: uninstall_launchd.sh + install_launchd.sh.
-# Neither script modifies .env or touches API keys.
+# IMPORTANT: the backend agent binds port 8000. Stop any manually-started
+# uvicorn first (see scripts/stop_backend.sh) or bootstrap will crash-loop.
+#
+# Neither this script nor uninstall touches .env or API keys.
 
 set -euo pipefail
 
@@ -15,26 +20,46 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 LAUNCHD_AGENTS="$HOME/Library/LaunchAgents"
 TEMPLATE_DIR="$PROJECT_DIR/launchd"
 LOG_DIR="$PROJECT_DIR/logs"
+UID_NUM="$(id -u)"
+DOMAIN="gui/$UID_NUM"
 
 echo "Project directory: $PROJECT_DIR"
 echo "LaunchAgents dir : $LAUNCHD_AGENTS"
+echo "launchd domain   : $DOMAIN"
 echo ""
 
 mkdir -p "$LAUNCHD_AGENTS" "$LOG_DIR"
 chmod +x "$PROJECT_DIR/scripts/start_backend.sh"
 chmod +x "$PROJECT_DIR/scripts/run_experiment_once.sh"
 
+# Warn if port 8000 is already taken (a manual uvicorn would block the agent).
+if lsof -ti :8000 >/dev/null 2>&1; then
+    echo "WARNING: port 8000 is already in use."
+    echo "         Stop the existing backend first:  bash scripts/stop_backend.sh"
+    echo ""
+fi
+
 install_plist() {
     local TEMPLATE="$1"
-    local NAME
+    local NAME LABEL TARGET
     NAME="$(basename "$TEMPLATE")"
-    local TARGET="$LAUNCHD_AGENTS/$NAME"
+    LABEL="${NAME%.plist}"
+    TARGET="$LAUNCHD_AGENTS/$NAME"
 
     sed "s|__PROJECT_PATH__|$PROJECT_DIR|g" "$TEMPLATE" > "$TARGET"
     echo "  Installed: $TARGET"
 
-    launchctl load "$TARGET" 2>&1 && echo "  Loaded:    $NAME" || \
-        echo "  WARN: launchctl load failed for $NAME (already loaded?)"
+    # Remove any prior instance (ignore errors if not loaded).
+    launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
+
+    if launchctl bootstrap "$DOMAIN" "$TARGET" 2>/tmp/launchd_err.$$; then
+        launchctl enable "$DOMAIN/$LABEL" 2>/dev/null || true
+        echo "  Bootstrapped + enabled: $LABEL"
+    else
+        echo "  ERROR: bootstrap failed for $LABEL:"
+        sed 's/^/    /' "/tmp/launchd_err.$$"
+    fi
+    rm -f "/tmp/launchd_err.$$"
 }
 
 echo "Installing plist files..."
@@ -45,12 +70,13 @@ done
 echo ""
 echo "Done."
 echo ""
-echo "Backend will start automatically on login (KeepAlive=true)."
-echo "Experiment will run daily at 10:00 local time."
-echo ""
-echo "Check status:"
+echo "Verify:"
 echo "  launchctl list | grep polymarket"
+echo "  curl -s http://127.0.0.1:8000/jobs/status | python3 -m json.tool"
 echo ""
-echo "Check logs:"
+echo "Manually fire the daily job once (without waiting for 10:00):"
+echo "  launchctl kickstart -k $DOMAIN/com.polymarket-ai.daily-experiment"
+echo ""
+echo "Logs:"
 echo "  tail -f $LOG_DIR/backend_stderr.log"
 echo "  tail -f $LOG_DIR/daily_stdout.log"

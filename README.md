@@ -240,12 +240,22 @@ This sets up two LaunchAgents:
 - **Backend keep-alive**: starts FastAPI on login, restarts on crash
 - **Daily 10:00 experiment**: calls `/jobs/run-once-notify` every day
 
+launchd owns the backend, so **stop any manually-started uvicorn first** —
+otherwise the agent can't bind port 8000 and crash-loops.
+
 ```bash
-# Install and load (run once)
+# 1. Free port 8000 (kill any manual backend running old code)
+bash scripts/stop_backend.sh
+
+# 2. Install + bootstrap both agents (modern macOS: uses launchctl bootstrap)
 bash scripts/install_launchd.sh
 
-# Verify
+# 3. Verify the agent is up and serving the LATEST code
 launchctl list | grep polymarket
+curl -s http://127.0.0.1:8000/jobs/status | python3 -m json.tool
+
+# 4. Fire the daily job once now (don't wait for 10:00)
+launchctl kickstart -k gui/$(id -u)/com.polymarket-ai.daily-experiment
 ```
 
 ### Check logs
