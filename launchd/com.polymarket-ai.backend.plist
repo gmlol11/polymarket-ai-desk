@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Backend keep-alive service.
+    install_launchd.sh replaces __PROJECT_PATH__ with the actual project directory.
+    Do NOT edit the installed copy in ~/Library/LaunchAgents directly.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.polymarket-ai.backend</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>__PROJECT_PATH__/scripts/start_backend.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__PROJECT_PATH__</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <!-- Start automatically on login and restart if it crashes -->
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>StandardOutPath</key>
+    <string>__PROJECT_PATH__/logs/backend_stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>__PROJECT_PATH__/logs/backend_stderr.log</string>
+
+    <!-- Throttle restarts — wait 10s before restarting on crash -->
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>

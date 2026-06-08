@@ -34,6 +34,12 @@ def _edge_str(edge: float | None) -> str:
 
 
 def format_experiment_summary(summary: dict[str, Any]) -> str:
+    """
+    Compact Telegram summary for experiment runs.
+
+    Header shows key counters. Body shows top-5 decisions by absolute edge.
+    All decisions are always persisted to DB regardless of what is shown here.
+    """
     status = summary.get("status", "unknown")
     duration = summary.get("duration_seconds", 0)
     sync = summary.get("sync") or {}
@@ -41,21 +47,30 @@ def format_experiment_summary(summary: dict[str, Any]) -> str:
     markets_analyzed = summary.get("markets_analyzed", 0)
     decisions = summary.get("decisions", [])
 
+    bet_count = sum(1 for d in decisions if d.get("decision") == "BET")
+    paper_trades_opened = summary.get("paper_trades_opened", bet_count)
+    skipped_recent = len(summary.get("skipped_recent_market_ids", []))
+
+    skipped_line = f" | Skipped (cooldown): {skipped_recent}" if skipped_recent else ""
+
     header = (
         f"🤖 <b>Polymarket AI Desk</b>\n"
-        f"Status: <b>{status}</b> | Duration: {duration}s\n"
-        f"Synced: {markets_synced} markets | Analyzed: {markets_analyzed}"
+        f"Status: <b>{status}</b> | {duration}s\n"
+        f"Synced: {markets_synced} | Analyzed: {markets_analyzed}{skipped_line}\n"
+        f"🎯 BET: {bet_count} | 💵 Paper trades: {paper_trades_opened}"
     )
 
     if not decisions:
         return header + "\n\nNo actionable markets found."
 
-    lines = [header, "", "📊 <b>Decisions:</b>"]
-    for i, d in enumerate(decisions, 1):
+    # Top 5 by absolute edge — most interesting regardless of direction
+    top5 = sorted(decisions, key=lambda d: abs(d.get("edge") or 0), reverse=True)[:5]
+
+    lines = [header, "", "📊 <b>Top decisions by edge:</b>"]
+    for i, d in enumerate(top5, 1):
         question = d.get("question", "Unknown market")
-        # truncate long questions
-        if len(question) > 60:
-            question = question[:57] + "..."
+        if len(question) > 55:
+            question = question[:52] + "..."
 
         decision = d.get("decision") or "?"
         emoji = DECISION_EMOJI.get(decision, "❓")
@@ -63,20 +78,17 @@ def format_experiment_summary(summary: dict[str, Any]) -> str:
         yes_price = _pct(d.get("yes_price"))
         consensus = _pct(d.get("consensus_probability"))
         edge = _edge_str(d.get("edge"))
-
-        paper_trade = d.get("paper_trade")
-        if paper_trade:
-            trade_side = paper_trade.get("side", "?")
-            trade_stake = float(paper_trade.get("stake_usd") or 1.0)
-            trade_line = f"\n   💵 Paper trade opened: {trade_side} ${trade_stake:.2f}"
-        else:
-            trade_line = "\n   No paper trade"
+        trade_tag = " 💵" if d.get("paper_trade") else ""
 
         lines.append(
             f"\n{i}. {question}\n"
-            f"   Market {yes_price} → Consensus {consensus} | Edge {edge}\n"
-            f"   {emoji} <b>{decision}</b>  Side: {side}{trade_line}"
+            f"   {yes_price} → {consensus} | Edge {edge}\n"
+            f"   {emoji} <b>{decision}</b>  {side}{trade_tag}"
         )
+
+    total = len(decisions)
+    if total > 5:
+        lines.append(f"\n…and {total - 5} more saved to DB.")
 
     return "\n".join(lines)
 

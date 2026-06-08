@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    Daily experiment cron job — fires at 10:00 local time every day.
+    install_launchd.sh replaces __PROJECT_PATH__ with the actual project directory.
+    Do NOT edit the installed copy in ~/Library/LaunchAgents directly.
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.polymarket-ai.daily-experiment</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>__PROJECT_PATH__/scripts/run_experiment_once.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>__PROJECT_PATH__</string>
+
+    <!-- Run daily at 10:00 local time -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>10</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>__PROJECT_PATH__/logs/daily_stdout.log</string>
+    <key>StandardErrorPath</key>
+    <string>__PROJECT_PATH__/logs/daily_stderr.log</string>
+</dict>
+</plist>

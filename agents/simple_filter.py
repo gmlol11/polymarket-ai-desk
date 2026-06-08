@@ -1,3 +1,4 @@
+from collections import defaultdict
 from typing import Any
 
 
@@ -134,3 +135,43 @@ def score_market(market: dict[str, Any]) -> dict[str, Any]:
 def score_markets(markets: list[dict[str, Any]]) -> list[dict[str, Any]]:
     scored = [score_market(market) for market in markets]
     return sorted(scored, key=lambda item: item["quality_score"], reverse=True)
+
+
+def select_diverse_candidates(
+    markets: list[dict[str, Any]], limit: int
+) -> list[dict[str, Any]]:
+    """
+    Select up to `limit` markets using round-robin across category_guess buckets.
+    Within each bucket markets are ordered by quality_score DESC.
+    This avoids all slots going to a single high-liquidity category.
+
+    Categories: sports, crypto, politics, meme, unknown.
+    """
+    buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for m in markets:
+        cat = m.get("category_guess", "unknown")
+        buckets[cat].append(m)
+
+    # Sort each bucket by quality_score desc
+    for cat in buckets:
+        buckets[cat].sort(key=lambda x: x.get("quality_score", 0), reverse=True)
+
+    # Round-robin across categories (sorted keys for determinism)
+    cats = sorted(buckets.keys())
+    indices: dict[str, int] = {cat: 0 for cat in cats}
+    result: list[dict[str, Any]] = []
+
+    while len(result) < limit:
+        added_any = False
+        for cat in cats:
+            if len(result) >= limit:
+                break
+            idx = indices[cat]
+            if idx < len(buckets[cat]):
+                result.append(buckets[cat][idx])
+                indices[cat] += 1
+                added_any = True
+        if not added_any:
+            break
+
+    return result

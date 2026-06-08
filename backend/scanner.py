@@ -18,7 +18,7 @@ def get_candidates(
     min_price: float = 0.05,
     max_price: float = 0.95,
 ):
-    limit = min(limit, 100)
+    limit = min(limit, 2000)
 
     sql = """
         SELECT

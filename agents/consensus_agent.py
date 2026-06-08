@@ -1,11 +1,16 @@
 from datetime import datetime, timezone
 from typing import Any
 
+try:
+    from backend.config import BET_MIN_EDGE, BET_MIN_CONFIDENCE
+except ImportError:  # guard for standalone agent testing
+    BET_MIN_EDGE = 0.05
+    BET_MIN_CONFIDENCE = 0.65
 
 SCHEMA_VERSION = "1.0"
 
-MIN_EDGE_TO_BET = 0.05
-MIN_CONFIDENCE_TO_BET = 0.65
+MIN_EDGE_TO_BET = BET_MIN_EDGE
+MIN_CONFIDENCE_TO_BET = BET_MIN_CONFIDENCE
 MIN_EDGE_TO_WATCH = 0.02
 
 

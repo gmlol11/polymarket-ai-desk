@@ -18,11 +18,20 @@ from backend.db.agent_history import (
     save_agent_run,
     save_consensus_decision,
 )
+from backend.config import (
+    BET_MIN_CONFIDENCE,
+    BET_MIN_EDGE,
+    EXPERIMENT_MARKET_LIMIT,
+    EXPERIMENT_REANALYZE_COOLDOWN_HOURS,
+    EXPERIMENT_SYNC_LIMIT,
+    PAPER_TRADE_STAKE_USD,
+)
 from backend.db.analytics import (
     get_bottom_edges,
     get_decision_summary,
     get_latest_by_market,
     get_near_bets,
+    get_paper_weekly_report,
     get_strong_negative_edge,
     get_top_edges,
 )
@@ -30,6 +39,7 @@ from backend.db.paper_portfolio import (
     create_paper_trade_from_decision,
     get_paper_summary,
     list_paper_trades,
+    mark_open_trades,
 )
 from backend.jobs.runner import run_experiment_cycle
 from backend.notifications.telegram import send_telegram_message
@@ -296,8 +306,14 @@ def jobs_status():
         "scheduler": "not_started",
         "mode": "manual",
         "trigger": "POST /jobs/run-once",
-        "cycle_market_limit": 3,
-        "sync_limit": 50,
+        "config": {
+            "sync_limit": EXPERIMENT_SYNC_LIMIT,
+            "market_limit": EXPERIMENT_MARKET_LIMIT,
+            "cooldown_hours": EXPERIMENT_REANALYZE_COOLDOWN_HOURS,
+            "paper_stake_usd": PAPER_TRADE_STAKE_USD,
+            "bet_min_edge": BET_MIN_EDGE,
+            "bet_min_confidence": BET_MIN_CONFIDENCE,
+        },
     }
 
 
@@ -339,6 +355,17 @@ def analytics_top_edges(limit: int = 20):
 @app.get("/analytics/bottom-edges")
 def analytics_bottom_edges(limit: int = 20):
     return get_bottom_edges(limit)
+
+
+@app.get("/analytics/paper-weekly-report")
+def analytics_paper_weekly_report(days: int = 7):
+    return get_paper_weekly_report(days)
+
+
+@app.post("/paper/mark-to-market")
+async def paper_mark_to_market():
+    updated = mark_open_trades()
+    return {"updated_count": len(updated), "trades": updated}
 
 
 @app.post("/notifications/test")

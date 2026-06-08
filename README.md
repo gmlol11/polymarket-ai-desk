@@ -154,9 +154,94 @@ Check runner status:
 curl "http://127.0.0.1:8000/jobs/status" | python3 -m json.tool
 ```
 
-The runner syncs up to 50 markets from Polymarket, picks up to 3 modelable
-candidates, runs the full agent pipeline, and saves results to `agent_runs`
-and `consensus_decisions`.
+The runner syncs up to `EXPERIMENT_SYNC_LIMIT` (default 500) markets from
+Polymarket, skips markets analyzed within the cooldown window
+(`EXPERIMENT_REANALYZE_COOLDOWN_HOURS`, default 48h), then picks up to
+`EXPERIMENT_MARKET_LIMIT` (default 25) diverse candidates using round-robin
+across market categories.
+
+## One-week paper trading research run
+
+### Daily sample defaults
+
+| Setting | Default | Env var |
+|---------|---------|---------|
+| Markets synced per run | 500 | `EXPERIMENT_SYNC_LIMIT` |
+| Markets analyzed per run | 25 | `EXPERIMENT_MARKET_LIMIT` |
+| Re-analysis cooldown | 48h | `EXPERIMENT_REANALYZE_COOLDOWN_HOURS` |
+| Paper trade stake (USD) | $1.00 | `PAPER_TRADE_STAKE_USD` |
+| BET min edge | 5% | `BET_MIN_EDGE` |
+| BET min confidence | 65% | `BET_MIN_CONFIDENCE` |
+
+### Run manually
+
+```bash
+# Single cycle with Telegram summary
+curl -X POST "http://127.0.0.1:8000/jobs/run-once-notify" | python3 -m json.tool
+
+# Quick test with smaller sample
+curl -X POST "http://127.0.0.1:8000/jobs/run-once" | python3 -m json.tool
+```
+
+### Apply mark-to-market migration (run once)
+
+```bash
+docker exec -i polymarket_postgres psql -U polymarket_user -d polymarket_ai_desk \
+    < database/004_paper_mark_to_market.sql
+```
+
+### Install launchd automation (macOS)
+
+This sets up two LaunchAgents:
+- **Backend keep-alive**: starts FastAPI on login, restarts on crash
+- **Daily 10:00 experiment**: calls `/jobs/run-once-notify` every day
+
+```bash
+# Install and load (run once)
+bash scripts/install_launchd.sh
+
+# Verify
+launchctl list | grep polymarket
+```
+
+### Check logs
+
+```bash
+# Backend logs
+tail -f logs/backend_stderr.log
+
+# Daily experiment output
+tail -f logs/daily_stdout.log
+
+# Per-run experiment logs (timestamped)
+ls logs/experiment_*.log
+tail logs/experiment_$(ls logs/experiment_*.log | sort | tail -1 | xargs basename)
+```
+
+### Get weekly report
+
+```bash
+# Full 7-day report
+curl "http://127.0.0.1:8000/analytics/paper-weekly-report?days=7" | python3 -m json.tool
+
+# Mark open paper trades to current market prices first
+curl -X POST "http://127.0.0.1:8000/paper/mark-to-market" | python3 -m json.tool
+
+# Paper portfolio summary
+curl "http://127.0.0.1:8000/paper/summary" | python3 -m json.tool
+
+# Top/bottom edges (latest per market, deduped)
+curl "http://127.0.0.1:8000/analytics/top-edges?limit=10" | python3 -m json.tool
+curl "http://127.0.0.1:8000/analytics/bottom-edges?limit=10" | python3 -m json.tool
+```
+
+### Uninstall launchd
+
+```bash
+bash scripts/uninstall_launchd.sh
+```
+
+> **No real funds are used.** Paper trading only. No wallet, no private key.
 
 ## Endpoints
 
@@ -181,9 +266,11 @@ and `consensus_decisions`.
 | POST | /notifications/test | Send test Telegram message |
 | GET | /paper/trades | List simulated paper trades |
 | GET | /paper/summary | Paper portfolio summary stats |
+| POST | /paper/mark-to-market | Compute unrealized PnL from current snapshot prices |
 | GET | /analytics/decision-summary | Aggregate decision stats |
 | GET | /analytics/near-bets | Decisions close to BET threshold |
 | GET | /analytics/strong-negative-edge | Decisions with edge ≤ -5% |
 | GET | /analytics/latest-by-market | Latest decision per market, newest first |
 | GET | /analytics/top-edges | Latest decision per market, best edge first |
 | GET | /analytics/bottom-edges | Latest decision per market, worst edge first |
+| GET | /analytics/paper-weekly-report | Full weekly paper-trading report |
