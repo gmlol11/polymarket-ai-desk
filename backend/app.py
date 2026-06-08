@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 
 from agents.claude_analyst import analyze_markets
 from agents.consensus_agent import run_consensus
-from agents.gemini_challenger import challenge_markets
+from agents.openai_challenger import challenge_markets
 from agents.research_agent import research_markets
 from agents.simple_filter import score_markets
 from backend.collectors.polymarket import sync_markets
