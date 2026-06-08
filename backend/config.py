@@ -24,6 +24,13 @@ def _int(name: str, default: int) -> int:
         return default
 
 
+def _bool(name: str, default: bool) -> bool:
+    val = os.getenv(name)
+    if val is None or val == "":
+        return default
+    return val.strip().lower() in ("1", "true", "yes", "on")
+
+
 # ── Experiment runner ──────────────────────────────────────────────────────
 # How many markets to sync from Polymarket per cycle
 EXPERIMENT_SYNC_LIMIT: int = _int("EXPERIMENT_SYNC_LIMIT", 500)
@@ -56,3 +63,9 @@ BET_MIN_CONFIDENCE: float = _float("BET_MIN_CONFIDENCE", 0.65)
 # model can't see, proxy/joke markets, stale prices). Edges above this are
 # downgraded to NEEDS_MORE_RESEARCH for human review instead of auto-betting.
 BET_MAX_EDGE: float = _float("BET_MAX_EDGE", 0.25)
+
+# Sports markets (live finals/cups) are priced off efficient real-time betting
+# markets the AI agents cannot see. When True, a sports market that would
+# otherwise BET is downgraded to WATCH — it stays in analysis and category
+# analytics, but never opens a paper trade. Set False to bet sports too.
+BET_EXCLUDE_SPORTS: bool = _bool("BET_EXCLUDE_SPORTS", True)

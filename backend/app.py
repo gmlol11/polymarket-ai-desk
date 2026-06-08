@@ -19,6 +19,7 @@ from backend.db.agent_history import (
     save_consensus_decision,
 )
 from backend.config import (
+    BET_EXCLUDE_SPORTS,
     BET_MAX_EDGE,
     BET_MIN_CONFIDENCE,
     BET_MIN_EDGE,
@@ -317,6 +318,7 @@ def jobs_status():
             "bet_min_edge": BET_MIN_EDGE,
             "bet_max_edge": BET_MAX_EDGE,
             "bet_min_confidence": BET_MIN_CONFIDENCE,
+            "bet_exclude_sports": BET_EXCLUDE_SPORTS,
         },
     }
 

@@ -2,11 +2,17 @@ from datetime import datetime, timezone
 from typing import Any
 
 try:
-    from backend.config import BET_MIN_EDGE, BET_MIN_CONFIDENCE, BET_MAX_EDGE
+    from backend.config import (
+        BET_MIN_EDGE,
+        BET_MIN_CONFIDENCE,
+        BET_MAX_EDGE,
+        BET_EXCLUDE_SPORTS,
+    )
 except ImportError:  # guard for standalone agent testing
     BET_MIN_EDGE = 0.05
     BET_MIN_CONFIDENCE = 0.65
     BET_MAX_EDGE = 0.25
+    BET_EXCLUDE_SPORTS = True
 
 SCHEMA_VERSION = "1.0"
 
@@ -155,6 +161,17 @@ def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market:
     edge = _edge(consensus_prob, market_prob, recommended_side)
     confidence = _average_confidence(claude_confidence, challenger_confidence)
     decision = _make_decision(edge, confidence, modelable, sides_agree)
+    reason = _decision_reason(decision, edge, confidence, modelable, sides_agree)
+
+    # Sports gate: the AI cannot see live game state, so a sports BET is a blind
+    # bet against an efficient real-time market. Keep it in analysis but never
+    # open a paper trade — downgrade to WATCH.
+    if BET_EXCLUDE_SPORTS and category_guess == "sports" and decision == "BET":
+        decision = "WATCH"
+        reason = (
+            f"Sports market — AI lacks live game data; BET downgraded to WATCH "
+            f"(edge {edge:.3f}, confidence {confidence:.2f})."
+        )
 
     return {
         "schema_version": SCHEMA_VERSION,
@@ -170,7 +187,7 @@ def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market:
         "confidence": confidence,
         "recommended_side": recommended_side,
         "decision": decision,
-        "reason": _decision_reason(decision, edge, confidence, modelable, sides_agree),
+        "reason": reason,
     }
 
 

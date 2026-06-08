@@ -192,6 +192,10 @@ blind spots:
   carry information the model lacks.
 - **Proxy markets** — "X before GTA VI"-style joke/proxy markets are forced to
   `skip` and marked non-modelable.
+- **Sports gate** (`BET_EXCLUDE_SPORTS`, default on) — sports markets (live
+  finals/cups) are priced off efficient real-time betting markets the AI can't
+  see. A sports BET is downgraded to WATCH: still analyzed and counted in
+  category analytics, but no paper trade is opened.
 - **Cooldown** — a market analyzed within the last 48h is not re-analyzed.
 
 ### Inspect the database
