@@ -169,9 +169,38 @@ across market categories.
 | Markets synced per run | 500 | `EXPERIMENT_SYNC_LIMIT` |
 | Markets analyzed per run | 25 | `EXPERIMENT_MARKET_LIMIT` |
 | Re-analysis cooldown | 48h | `EXPERIMENT_REANALYZE_COOLDOWN_HOURS` |
+| Resolution proximity skip | 3 days | `EXPERIMENT_MIN_DAYS_TO_RESOLUTION` |
 | Paper trade stake (USD) | $1.00 | `PAPER_TRADE_STAKE_USD` |
 | BET min edge | 5% | `BET_MIN_EDGE` |
+| BET max plausible edge | 25% | `BET_MAX_EDGE` |
 | BET min confidence | 65% | `BET_MIN_CONFIDENCE` |
+
+### Autonomous-run guardrails
+
+The pipeline is designed to accumulate *meaningful* paper-trading data without
+supervision. Several guardrails prevent the AI agents from "trading" their own
+blind spots:
+
+- **Edge sign** — `NO`-side edge is `market_prob - consensus_prob` (a genuine
+  overpriced-YES market produces a positive NO edge).
+- **Max plausible edge** — an edge above `BET_MAX_EDGE` (25%) on a liquid market
+  is almost never real. Such cases are flagged `NEEDS_MORE_RESEARCH` for review
+  instead of becoming an automatic BET. (e.g. an in-progress sports final the
+  model can't see, where the market is far better informed.)
+- **Resolution proximity** — markets resolving within
+  `EXPERIMENT_MIN_DAYS_TO_RESOLUTION` (3) days are skipped; live/imminent events
+  carry information the model lacks.
+- **Proxy markets** — "X before GTA VI"-style joke/proxy markets are forced to
+  `skip` and marked non-modelable.
+- **Cooldown** — a market analyzed within the last 48h is not re-analyzed.
+
+### Inspect the database
+
+```bash
+# Read-only health check: decision distribution, edge by side,
+# top markets by |edge|, price plausibility, category coverage
+bash scripts/db_diagnostics.sh
+```
 
 ### Run manually
 

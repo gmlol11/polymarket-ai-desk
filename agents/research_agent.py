@@ -21,9 +21,11 @@ def research_market(market: dict[str, Any]) -> dict[str, Any]:
         notes.append("Market appears meme-like or low-modelability.")
 
     if has_weak_proxy:
-        notes.append("Market uses weak proxy / unusual resolution framing.")
-        if category_guess not in ["crypto", "politics"]:
-            research_priority = "low"
+        # "X before GTA VI"-style proxy markets resolve on an unknowable future
+        # event (GTA VI release date) — the AI agents cannot model these.
+        modelable = False
+        research_priority = "low"
+        notes.append("Market uses weak proxy / unusual resolution framing; not modelable.")
 
     if category_guess == "sports":
         notes.append("Sports market with clear resolution criteria.")

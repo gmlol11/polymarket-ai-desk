@@ -2,15 +2,17 @@ from datetime import datetime, timezone
 from typing import Any
 
 try:
-    from backend.config import BET_MIN_EDGE, BET_MIN_CONFIDENCE
+    from backend.config import BET_MIN_EDGE, BET_MIN_CONFIDENCE, BET_MAX_EDGE
 except ImportError:  # guard for standalone agent testing
     BET_MIN_EDGE = 0.05
     BET_MIN_CONFIDENCE = 0.65
+    BET_MAX_EDGE = 0.25
 
 SCHEMA_VERSION = "1.0"
 
 MIN_EDGE_TO_BET = BET_MIN_EDGE
 MIN_CONFIDENCE_TO_BET = BET_MIN_CONFIDENCE
+MAX_PLAUSIBLE_EDGE = BET_MAX_EDGE
 MIN_EDGE_TO_WATCH = 0.02
 
 
@@ -19,10 +21,18 @@ def _consensus_probability(claude_prob: float, challenger_prob: float) -> float:
 
 
 def _edge(consensus_prob: float, market_prob: float, recommended_side: str) -> float:
+    """
+    Expected value per share for the recommended side.
+
+    YES: pay market_prob, win 1 with our probability consensus_prob
+         → edge = consensus_prob - market_prob
+    NO:  pay (1 - market_prob), win 1 with our probability (1 - consensus_prob)
+         → edge = (1 - consensus_prob) - (1 - market_prob) = market_prob - consensus_prob
+    """
     if recommended_side == "YES":
         return round(consensus_prob - market_prob, 4)
     if recommended_side == "NO":
-        return round((1 - market_prob) - (1 - consensus_prob), 4)
+        return round(market_prob - consensus_prob, 4)
     return 0.0
 
 
@@ -47,9 +57,13 @@ def _make_decision(
     if not modelable:
         return "SKIP"
     if edge >= MIN_EDGE_TO_BET and confidence >= MIN_CONFIDENCE_TO_BET:
-        if sides_agree:
-            return "BET"
-        return "NEEDS_MORE_RESEARCH"  # good numbers but agents disagree on direction
+        if not sides_agree:
+            return "NEEDS_MORE_RESEARCH"  # good numbers but agents disagree on direction
+        if edge > MAX_PLAUSIBLE_EDGE:
+            # Implausibly large edge on a liquid market — almost always a model
+            # blind spot (live event, proxy market, stale price). Flag, don't bet.
+            return "NEEDS_MORE_RESEARCH"
+        return "BET"
     if edge >= MIN_EDGE_TO_WATCH:
         return "WATCH"
     if edge < 0:
@@ -72,6 +86,11 @@ def _decision_reason(
         return f"No positive edge (edge={edge:.3f})."
     if not sides_agree:
         return "Agents disagree on direction — needs more research."
+    if edge > MAX_PLAUSIBLE_EDGE:
+        return (
+            f"Edge {edge:.3f} implausibly large for a liquid market — likely a model "
+            f"blind spot (live event or proxy market). Flagged for review, not auto-bet."
+        )
     return "Conflicting signals between analyst and challenger."
 
 

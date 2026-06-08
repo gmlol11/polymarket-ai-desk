@@ -19,9 +19,11 @@ from backend.db.agent_history import (
     save_consensus_decision,
 )
 from backend.config import (
+    BET_MAX_EDGE,
     BET_MIN_CONFIDENCE,
     BET_MIN_EDGE,
     EXPERIMENT_MARKET_LIMIT,
+    EXPERIMENT_MIN_DAYS_TO_RESOLUTION,
     EXPERIMENT_REANALYZE_COOLDOWN_HOURS,
     EXPERIMENT_SYNC_LIMIT,
     PAPER_TRADE_STAKE_USD,
@@ -310,8 +312,10 @@ def jobs_status():
             "sync_limit": EXPERIMENT_SYNC_LIMIT,
             "market_limit": EXPERIMENT_MARKET_LIMIT,
             "cooldown_hours": EXPERIMENT_REANALYZE_COOLDOWN_HOURS,
+            "min_days_to_resolution": EXPERIMENT_MIN_DAYS_TO_RESOLUTION,
             "paper_stake_usd": PAPER_TRADE_STAKE_USD,
             "bet_min_edge": BET_MIN_EDGE,
+            "bet_max_edge": BET_MAX_EDGE,
             "bet_min_confidence": BET_MIN_CONFIDENCE,
         },
     }

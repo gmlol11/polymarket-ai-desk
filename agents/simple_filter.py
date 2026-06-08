@@ -98,7 +98,8 @@ def score_market(market: dict[str, Any]) -> dict[str, Any]:
         score -= 10
         reasons.append("price is too close to edge")
 
-    if any(keyword in q for keyword in WEAK_PROXY_KEYWORDS):
+    has_weak_proxy = any(keyword in q for keyword in WEAK_PROXY_KEYWORDS)
+    if has_weak_proxy:
         score -= 20
         reasons.append("weak proxy / unusual resolution framing")
 
@@ -122,6 +123,12 @@ def score_market(market: dict[str, Any]) -> dict[str, Any]:
         risk_flag = "watch"
     else:
         risk_flag = "skip"
+
+    # Hard guardrail: proxy / joke markets ("X before GTA VI") are never modelable
+    # by the AI agents — force skip regardless of liquidity-driven score.
+    if has_weak_proxy:
+        risk_flag = "skip"
+        reasons.append("forced skip: proxy resolution framing")
 
     return {
         **market,

@@ -30,22 +30,46 @@ def _to_float(value: Any):
         return None
 
 
+# Gamma API caps a single page at 100 markets — paginate with offset to get more.
+GAMMA_PAGE_SIZE = 100
+
+
 async def fetch_markets(limit: int = 100) -> list[dict[str, Any]]:
-    params = {
-        "active": "true",
-        "closed": "false",
-        "limit": limit,
-    }
+    """
+    Fetch up to `limit` active, open markets from the Polymarket Gamma API.
+
+    The API returns at most GAMMA_PAGE_SIZE (100) markets per request, so for
+    larger limits we paginate using the `offset` parameter until we have enough
+    or the API runs out of markets.
+    """
+    collected: list[dict[str, Any]] = []
+    offset = 0
 
     async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.get(GAMMA_MARKETS_URL, params=params)
-        response.raise_for_status()
-        data = response.json()
+        while len(collected) < limit:
+            page_size = min(GAMMA_PAGE_SIZE, limit - len(collected))
+            params = {
+                "active": "true",
+                "closed": "false",
+                "limit": page_size,
+                "offset": offset,
+            }
 
-    if isinstance(data, list):
-        return data
+            response = await client.get(GAMMA_MARKETS_URL, params=params)
+            response.raise_for_status()
+            data = response.json()
 
-    return data.get("markets", [])
+            page = data if isinstance(data, list) else data.get("markets", [])
+            if not page:
+                break  # no more markets available
+
+            collected.extend(page)
+            offset += len(page)
+
+            if len(page) < page_size:
+                break  # last page reached
+
+    return collected[:limit]
 
 
 async def sync_markets(limit: int = 100) -> dict[str, Any]:

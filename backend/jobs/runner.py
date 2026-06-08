@@ -6,7 +6,7 @@ Experiment runner — executes one full pipeline cycle:
 Configuration is read from backend/config.py (environment variables with safe defaults).
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from agents.claude_analyst import analyze_markets
@@ -17,6 +17,7 @@ from agents.simple_filter import score_markets, select_diverse_candidates
 from backend.collectors.polymarket import sync_markets
 from backend.config import (
     EXPERIMENT_MARKET_LIMIT,
+    EXPERIMENT_MIN_DAYS_TO_RESOLUTION,
     EXPERIMENT_REANALYZE_COOLDOWN_HOURS,
     EXPERIMENT_SYNC_LIMIT,
     PAPER_TRADE_STAKE_USD,
@@ -55,6 +56,7 @@ async def run_experiment_cycle(
     _sync_limit = sync_limit if sync_limit is not None else EXPERIMENT_SYNC_LIMIT
     _market_limit = market_limit if market_limit is not None else EXPERIMENT_MARKET_LIMIT
     _cooldown_hours = EXPERIMENT_REANALYZE_COOLDOWN_HOURS
+    _min_days = EXPERIMENT_MIN_DAYS_TO_RESOLUTION
     _stake = PAPER_TRADE_STAKE_USD
 
     started_at = datetime.now(timezone.utc)
@@ -78,6 +80,24 @@ async def run_experiment_cycle(
         and m.get("risk_flag") != "skip"
     ]
 
+    # 3b. Resolution-proximity guardrail: drop markets resolving within _min_days.
+    #     Live / imminent events (e.g. an in-progress sports final) carry market
+    #     information the AI agents cannot see; the model's disagreement there is
+    #     ignorance, not edge. Markets with no end_date are kept (can't assess).
+    skipped_imminent_ids: list[int] = []
+    if _min_days > 0:
+        cutoff = datetime.now(timezone.utc) + timedelta(days=_min_days)
+        kept = []
+        for m in eligible:
+            end_date = m.get("end_date")
+            if end_date is not None:
+                ed = end_date if end_date.tzinfo else end_date.replace(tzinfo=timezone.utc)
+                if ed <= cutoff:
+                    skipped_imminent_ids.append(m["id"])
+                    continue
+            kept.append(m)
+        eligible = kept
+
     # 4. Cooldown: skip markets analyzed within the cooldown window
     recent_ids = get_recently_analyzed_market_ids(_cooldown_hours)
     skipped_recent_ids = [m["id"] for m in eligible if m["id"] in recent_ids]
@@ -95,10 +115,12 @@ async def run_experiment_cycle(
             "sync_limit": _sync_limit,
             "requested_market_limit": _market_limit,
             "cooldown_hours": _cooldown_hours,
+            "min_days_to_resolution": _min_days,
             "sync": sync_result,
             "markets_analyzed": 0,
             "analyzed_market_ids": [],
             "skipped_recent_market_ids": skipped_recent_ids,
+            "skipped_imminent_market_ids": skipped_imminent_ids,
             "decisions": [],
             "paper_trades_opened": 0,
             "status": "no_markets",
@@ -174,10 +196,12 @@ async def run_experiment_cycle(
         "sync_limit": _sync_limit,
         "requested_market_limit": _market_limit,
         "cooldown_hours": _cooldown_hours,
+        "min_days_to_resolution": _min_days,
         "sync": sync_result,
         "markets_analyzed": len(decisions),
         "analyzed_market_ids": [d["market_id"] for d in decisions],
         "skipped_recent_market_ids": skipped_recent_ids,
+        "skipped_imminent_market_ids": skipped_imminent_ids,
         "decisions": decisions,
         "paper_trades_opened": paper_trades_opened,
         "status": "ok",
