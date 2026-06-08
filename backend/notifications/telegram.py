@@ -78,6 +78,23 @@ def format_experiment_summary(summary: dict[str, Any]) -> str:
             f"   {emoji} <b>{decision}</b>  Side: {side}{trade_line}"
         )
 
+    # Footer: compact stats
+    bet_count = sum(1 for d in decisions if d.get("decision") == "BET")
+    watch_nmr_count = sum(
+        1 for d in decisions if d.get("decision") in ("WATCH", "NEEDS_MORE_RESEARCH")
+    )
+    skip_count = sum(1 for d in decisions if d.get("decision") == "SKIP")
+
+    positive_edges = [d["edge"] for d in decisions if (d.get("edge") or 0) > 0]
+    negative_edges = [d["edge"] for d in decisions if (d.get("edge") or 0) < 0]
+    best = _edge_str(max(positive_edges)) if positive_edges else "n/a"
+    worst = _edge_str(min(negative_edges)) if negative_edges else "n/a"
+
+    lines.append(
+        f"\n📈 BET {bet_count} · Watch/NMR {watch_nmr_count} · Skip {skip_count}"
+        f" | Best {best} / Worst {worst}"
+    )
+
     return "\n".join(lines)
 
 

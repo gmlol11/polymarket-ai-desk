@@ -95,6 +95,20 @@ curl "http://127.0.0.1:8000/paper/trades" | python3 -m json.tool
 curl "http://127.0.0.1:8000/paper/summary" | python3 -m json.tool
 ```
 
+## Analytics
+
+```bash
+# Overall decision stats (counts, avg edge, avg confidence, paper trades)
+curl "http://127.0.0.1:8000/analytics/decision-summary" | python3 -m json.tool
+
+# Decisions that almost qualified as BET (positive edge below threshold,
+# or good edge but low confidence, or sides disagreement blocked BET)
+curl "http://127.0.0.1:8000/analytics/near-bets?limit=20" | python3 -m json.tool
+
+# Markets where both agents strongly disagreed with the price (edge <= -5%)
+curl "http://127.0.0.1:8000/analytics/strong-negative-edge?limit=20" | python3 -m json.tool
+```
+
 ## Telegram Notifications
 
 ### Setup
@@ -158,3 +172,6 @@ and `consensus_decisions`.
 | POST | /notifications/test | Send test Telegram message |
 | GET | /paper/trades | List simulated paper trades |
 | GET | /paper/summary | Paper portfolio summary stats |
+| GET | /analytics/decision-summary | Aggregate decision stats |
+| GET | /analytics/near-bets | Decisions close to BET threshold |
+| GET | /analytics/strong-negative-edge | Decisions with edge ≤ -5% |

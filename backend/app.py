@@ -18,6 +18,11 @@ from backend.db.agent_history import (
     save_agent_run,
     save_consensus_decision,
 )
+from backend.db.analytics import (
+    get_decision_summary,
+    get_near_bets,
+    get_strong_negative_edge,
+)
 from backend.db.paper_portfolio import (
     create_paper_trade_from_decision,
     get_paper_summary,
@@ -301,6 +306,21 @@ def paper_trades(limit: int = 20):
 @app.get("/paper/summary")
 def paper_summary():
     return get_paper_summary()
+
+
+@app.get("/analytics/decision-summary")
+def analytics_decision_summary():
+    return get_decision_summary()
+
+
+@app.get("/analytics/near-bets")
+def analytics_near_bets(limit: int = 20):
+    return get_near_bets(limit)
+
+
+@app.get("/analytics/strong-negative-edge")
+def analytics_strong_negative_edge(limit: int = 20):
+    return get_strong_negative_edge(limit)
 
 
 @app.post("/notifications/test")
