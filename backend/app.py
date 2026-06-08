@@ -11,6 +11,13 @@ from agents.openai_challenger import challenge_markets
 from agents.research_agent import research_markets
 from agents.simple_filter import score_markets
 from backend.collectors.polymarket import sync_markets
+from backend.db.agent_history import (
+    get_market_agent_history,
+    list_agent_runs,
+    list_consensus_decisions,
+    save_agent_run,
+    save_consensus_decision,
+)
 from backend.scanner import get_candidates
 
 load_dotenv()
@@ -37,6 +44,14 @@ def db_query(sql: str, params: tuple = ()):
             rows = cur.fetchall()
 
     return [dict(zip(columns, row)) for row in rows]
+
+
+def _filter_markets(researched: list, limit: int) -> list:
+    return [
+        m for m in researched
+        if m.get("research", {}).get("modelable", False)
+        and m.get("risk_flag") != "skip"
+    ][:limit]
 
 
 @app.get("/health")
@@ -144,6 +159,11 @@ def get_market(market_id: int):
     return {"market": rows[0], "snapshots": snapshots}
 
 
+@app.get("/markets/{market_id}/agent-history")
+def market_agent_history(market_id: int):
+    return get_market_agent_history(market_id)
+
+
 @app.get("/scanner/candidates")
 def scanner_candidates(
     limit: int = 20,
@@ -175,20 +195,66 @@ def research_agent(limit: int = 20):
 
 
 @app.get("/agents/analyze")
-async def analyze_agent(limit: int = 10):
-    candidates = get_candidates(limit=limit)
+async def analyze_agent(limit: int = 1):
+    limit = min(limit, 5)
+    candidates = get_candidates(limit=limit * 4)
     scored = score_markets(candidates)
     researched = research_markets(scored)
-    modelable = [m for m in researched if m.get("research", {}).get("modelable", False)]
-    return analyze_markets(modelable)
+    filtered = _filter_markets(researched, limit)
+
+    results = analyze_markets(filtered)
+
+    for item in results:
+        analyst = item.get("analyst") or {}
+        try:
+            save_agent_run(item["id"], analyst)
+        except Exception:
+            pass
+
+    return results
 
 
 @app.get("/agents/consensus")
-async def consensus_agent(limit: int = 10):
-    candidates = get_candidates(limit=limit)
+async def consensus_agent(limit: int = 1):
+    limit = min(limit, 5)
+    candidates = get_candidates(limit=limit * 4)
     scored = score_markets(candidates)
     researched = research_markets(scored)
-    modelable = [m for m in researched if m.get("research", {}).get("modelable", False)]
-    with_analyst = analyze_markets(modelable)
+    filtered = _filter_markets(researched, limit)
+
+    with_analyst = analyze_markets(filtered)
     with_challenger = challenge_markets(with_analyst)
-    return run_consensus(with_challenger)
+    results = run_consensus(with_challenger)
+
+    for item in results:
+        market_id = item["id"]
+        analyst = item.get("analyst") or {}
+        challenger = item.get("challenger") or {}
+        consensus = item.get("consensus") or {}
+
+        try:
+            save_agent_run(market_id, analyst)
+        except Exception:
+            pass
+
+        try:
+            save_agent_run(market_id, challenger)
+        except Exception:
+            pass
+
+        try:
+            save_consensus_decision(market_id, consensus)
+        except Exception:
+            pass
+
+    return results
+
+
+@app.get("/agent-runs")
+def agent_runs(limit: int = 20):
+    return list_agent_runs(limit)
+
+
+@app.get("/consensus-decisions")
+def consensus_decisions(limit: int = 20):
+    return list_consensus_decisions(limit)

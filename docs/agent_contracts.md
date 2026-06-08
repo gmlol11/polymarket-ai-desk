@@ -57,12 +57,12 @@ All agent outputs include `"schema_version": "1.0"` and `"generated_at"` (ISO 86
 
 ---
 
-## Challenger Output (`gemini_challenger`)
+## Challenger Output (`openai_challenger`)
 
 ```json
 {
   "schema_version": "1.0",
-  "agent_name": "gemini_challenger",
+  "agent_name": "openai_challenger",
   "market_id": 21,
   "generated_at": "2026-06-08T10:15:05Z",
   "estimated_probability": 0.14,
@@ -85,7 +85,7 @@ All agent outputs include `"schema_version": "1.0"` and `"generated_at"` (ISO 86
   "generated_at": "2026-06-08T10:15:10Z",
   "market_probability": 0.171,
   "claude_probability": 0.23,
-  "gemini_probability": 0.14,
+  "challenger_probability": 0.14,
   "consensus_probability": 0.19,
   "edge": 0.019,
   "confidence": 0.61,
