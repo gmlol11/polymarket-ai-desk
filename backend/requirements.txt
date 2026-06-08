@@ -7,3 +7,4 @@ httpx==0.28.1
 pydantic==2.10.3
 anthropic>=0.40.0
 openai>=1.0.0
+apscheduler>=3.10.0,<4

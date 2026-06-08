@@ -62,6 +62,24 @@ Collector → Scanner → Simple Filter → Research Agent
                                     Consensus Agent → DB
 ```
 
+## Experiment Runner
+
+Run one full cycle manually (sync + score + analyze up to 3 markets + persist):
+
+```bash
+curl -X POST "http://127.0.0.1:8000/jobs/run-once" | python3 -m json.tool
+```
+
+Check runner status:
+
+```bash
+curl "http://127.0.0.1:8000/jobs/status" | python3 -m json.tool
+```
+
+The runner syncs up to 50 markets from Polymarket, picks up to 3 modelable
+candidates, runs the full agent pipeline, and saves results to `agent_runs`
+and `consensus_decisions`.
+
 ## Endpoints
 
 | Method | Path | Description |
@@ -79,3 +97,5 @@ Collector → Scanner → Simple Filter → Research Agent
 | GET | /agents/consensus | Full pipeline output (persisted) |
 | GET | /agent-runs | Persisted agent run history |
 | GET | /consensus-decisions | Persisted consensus decision history |
+| POST | /jobs/run-once | Run one full experiment cycle manually |
+| GET | /jobs/status | Scheduler/runner status |

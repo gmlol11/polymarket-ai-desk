@@ -18,6 +18,7 @@ from backend.db.agent_history import (
     save_agent_run,
     save_consensus_decision,
 )
+from backend.jobs.runner import run_experiment_cycle
 from backend.scanner import get_candidates
 
 load_dotenv()
@@ -258,3 +259,19 @@ def agent_runs(limit: int = 20):
 @app.get("/consensus-decisions")
 def consensus_decisions(limit: int = 20):
     return list_consensus_decisions(limit)
+
+
+@app.post("/jobs/run-once")
+async def jobs_run_once():
+    return await run_experiment_cycle()
+
+
+@app.get("/jobs/status")
+def jobs_status():
+    return {
+        "scheduler": "not_started",
+        "mode": "manual",
+        "trigger": "POST /jobs/run-once",
+        "cycle_market_limit": 3,
+        "sync_limit": 50,
+    }
