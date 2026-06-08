@@ -9,8 +9,8 @@ MIN_CONFIDENCE_TO_BET = 0.60
 MIN_EDGE_TO_WATCH = 0.02
 
 
-def _consensus_probability(claude_prob: float, gemini_prob: float) -> float:
-    return round((claude_prob + gemini_prob) / 2, 4)
+def _consensus_probability(claude_prob: float, challenger_prob: float) -> float:
+    return round((claude_prob + challenger_prob) / 2, 4)
 
 
 def _edge(consensus_prob: float, market_prob: float, recommended_side: str) -> float:
@@ -21,8 +21,8 @@ def _edge(consensus_prob: float, market_prob: float, recommended_side: str) -> f
     return 0.0
 
 
-def _resolve_side(claude_side: str, gemini_side: str, consensus_prob: float, market_prob: float) -> str:
-    if claude_side == gemini_side and claude_side in ("YES", "NO"):
+def _resolve_side(claude_side: str, challenger_side: str, consensus_prob: float, market_prob: float) -> str:
+    if claude_side == challenger_side and claude_side in ("YES", "NO"):
         return claude_side
     # disagreement — fall back to whether consensus is above or below market
     if consensus_prob > market_prob:
@@ -32,8 +32,8 @@ def _resolve_side(claude_side: str, gemini_side: str, consensus_prob: float, mar
     return "NONE"
 
 
-def _average_confidence(claude_confidence: float, gemini_confidence: float) -> float:
-    return round((claude_confidence + gemini_confidence) / 2, 4)
+def _average_confidence(claude_confidence: float, challenger_confidence: float) -> float:
+    return round((claude_confidence + challenger_confidence) / 2, 4)
 
 
 def _make_decision(edge: float, confidence: float, modelable: bool) -> str:
@@ -99,7 +99,7 @@ def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market:
             "generated_at": now,
             "market_probability": round(market_prob, 4),
             "claude_probability": claude_prob,
-            "gemini_probability": None,
+            "challenger_probability": None,
             "consensus_probability": consensus_prob,
             "edge": edge,
             "confidence": confidence,
@@ -108,14 +108,14 @@ def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market:
             "reason": f"Challenger unavailable — analyst-only. {_decision_reason(decision, edge, confidence, modelable)}",
         }
 
-    gemini_prob = float(challenger.get("estimated_probability") or 0)
-    gemini_side = challenger.get("recommended_side") or "NONE"
-    gemini_confidence = float(challenger.get("confidence") or 0)
+    challenger_prob = float(challenger.get("estimated_probability") or 0)
+    challenger_side = challenger.get("recommended_side") or "NONE"
+    challenger_confidence = float(challenger.get("confidence") or 0)
 
-    consensus_prob = _consensus_probability(claude_prob, gemini_prob)
-    recommended_side = _resolve_side(claude_side, gemini_side, consensus_prob, market_prob)
+    consensus_prob = _consensus_probability(claude_prob, challenger_prob)
+    recommended_side = _resolve_side(claude_side, challenger_side, consensus_prob, market_prob)
     edge = _edge(consensus_prob, market_prob, recommended_side)
-    confidence = _average_confidence(claude_confidence, gemini_confidence)
+    confidence = _average_confidence(claude_confidence, challenger_confidence)
     decision = _make_decision(edge, confidence, modelable)
 
     return {
@@ -125,7 +125,7 @@ def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market:
         "generated_at": now,
         "market_probability": round(market_prob, 4),
         "claude_probability": claude_prob,
-        "gemini_probability": gemini_prob,
+        "challenger_probability": challenger_prob,
         "consensus_probability": consensus_prob,
         "edge": edge,
         "confidence": confidence,
@@ -142,7 +142,7 @@ def run_consensus(
     Expects each item to have:
       - market fields (id, yes_price, research, ...)
       - "analyst": claude_analyst output dict
-      - "challenger": gemini_challenger output dict
+      - "challenger": openai_challenger output dict
     """
     results = []
     for item in markets_with_analyses:
