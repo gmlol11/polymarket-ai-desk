@@ -5,6 +5,7 @@ import redis
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 
+from agents.research_agent import research_markets
 from agents.simple_filter import score_markets
 from backend.collectors.polymarket import sync_markets
 from backend.scanner import get_candidates
@@ -42,10 +43,7 @@ def health():
 
 @app.get("/readyz")
 def readyz():
-    checks = {
-        "postgres": "unknown",
-        "redis": "unknown",
-    }
+    checks = {"postgres": "unknown", "redis": "unknown"}
 
     try:
         with psycopg.connect(DATABASE_URL) as conn:
@@ -64,11 +62,7 @@ def readyz():
         checks["redis"] = f"error: {e}"
 
     status = "ok" if all(value == "ok" for value in checks.values()) else "error"
-
-    return {
-        "status": status,
-        "checks": checks,
-    }
+    return {"status": status, "checks": checks}
 
 
 @app.post("/markets/sync")
@@ -80,14 +74,8 @@ async def markets_sync(limit: int = 100):
 def stats():
     markets_count = db_query("SELECT COUNT(*) AS count FROM markets;")[0]["count"]
     snapshots_count = db_query("SELECT COUNT(*) AS count FROM market_snapshots;")[0]["count"]
-
     latest_snapshot = db_query(
-        """
-        SELECT created_at
-        FROM market_snapshots
-        ORDER BY created_at DESC
-        LIMIT 1;
-        """
+        "SELECT created_at FROM market_snapshots ORDER BY created_at DESC LIMIT 1;"
     )
 
     return {
@@ -100,22 +88,12 @@ def stats():
 @app.get("/markets")
 def list_markets(limit: int = 20, offset: int = 0):
     limit = min(limit, 100)
-
     return db_query(
         """
         SELECT
-            m.id,
-            m.polymarket_id,
-            m.question,
-            m.category,
-            m.active,
-            m.closed,
-            m.end_date,
-            m.updated_at,
-            s.yes_price,
-            s.no_price,
-            s.volume,
-            s.liquidity,
+            m.id, m.polymarket_id, m.question, m.category,
+            m.active, m.closed, m.end_date, m.updated_at,
+            s.yes_price, s.no_price, s.volume, s.liquidity,
             s.created_at AS snapshot_at
         FROM markets m
         LEFT JOIN LATERAL (
@@ -137,16 +115,9 @@ def get_market(market_id: int):
     rows = db_query(
         """
         SELECT
-            m.id,
-            m.polymarket_id,
-            m.question,
-            m.description,
-            m.category,
-            m.active,
-            m.closed,
-            m.end_date,
-            m.created_at,
-            m.updated_at
+            m.id, m.polymarket_id, m.question, m.description,
+            m.category, m.active, m.closed, m.end_date,
+            m.created_at, m.updated_at
         FROM markets m
         WHERE m.id = %s;
         """,
@@ -158,12 +129,7 @@ def get_market(market_id: int):
 
     snapshots = db_query(
         """
-        SELECT
-            yes_price,
-            no_price,
-            volume,
-            liquidity,
-            created_at
+        SELECT yes_price, no_price, volume, liquidity, created_at
         FROM market_snapshots
         WHERE market_id = %s
         ORDER BY created_at DESC
@@ -172,10 +138,7 @@ def get_market(market_id: int):
         (market_id,),
     )
 
-    return {
-        "market": rows[0],
-        "snapshots": snapshots,
-    }
+    return {"market": rows[0], "snapshots": snapshots}
 
 
 @app.get("/scanner/candidates")
@@ -199,3 +162,10 @@ def scanner_candidates(
 def simple_filter_agent(limit: int = 20):
     candidates = get_candidates(limit=limit)
     return score_markets(candidates)
+
+
+@app.get("/agents/research")
+def research_agent(limit: int = 20):
+    candidates = get_candidates(limit=limit)
+    scored = score_markets(candidates)
+    return research_markets(scored)
