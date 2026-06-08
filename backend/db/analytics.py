@@ -108,3 +108,56 @@ def get_strong_negative_edge(limit: int = 20) -> list[dict[str, Any]]:
             )
             columns = [desc[0] for desc in cur.description]
             return [dict(zip(columns, row)) for row in cur.fetchall()]
+
+
+# ---------------------------------------------------------------------------
+# Latest-decision-per-market helpers
+# All three share the same CTE that picks the most recent decision per market,
+# then differ only in the outer ORDER BY.
+# ---------------------------------------------------------------------------
+
+_LATEST_BY_MARKET_CTE = """
+WITH latest AS (
+    SELECT DISTINCT ON (cd.market_id)
+        cd.id,
+        cd.market_id,
+        m.polymarket_id,
+        m.question,
+        cd.market_probability,
+        cd.consensus_probability,
+        cd.edge,
+        cd.confidence,
+        cd.recommended_side,
+        cd.decision,
+        cd.reason,
+        cd.created_at
+    FROM consensus_decisions cd
+    LEFT JOIN markets m ON m.id = cd.market_id
+    ORDER BY cd.market_id, cd.created_at DESC
+)
+"""
+
+
+def _run_latest_query(order_by: str, limit: int) -> list[dict[str, Any]]:
+    limit = min(limit, 100)
+    sql = _LATEST_BY_MARKET_CTE + f"SELECT * FROM latest ORDER BY {order_by} LIMIT %s"
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, (limit,))
+            columns = [desc[0] for desc in cur.description]
+            return [dict(zip(columns, row)) for row in cur.fetchall()]
+
+
+def get_latest_by_market(limit: int = 20) -> list[dict[str, Any]]:
+    """Latest consensus decision per market, ordered by most recently analyzed first."""
+    return _run_latest_query("created_at DESC", limit)
+
+
+def get_top_edges(limit: int = 20) -> list[dict[str, Any]]:
+    """Latest decision per market, ordered by highest edge first (best value bets)."""
+    return _run_latest_query("edge DESC", limit)
+
+
+def get_bottom_edges(limit: int = 20) -> list[dict[str, Any]]:
+    """Latest decision per market, ordered by lowest edge first (most overpriced markets)."""
+    return _run_latest_query("edge ASC", limit)

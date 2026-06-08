@@ -107,6 +107,15 @@ curl "http://127.0.0.1:8000/analytics/near-bets?limit=20" | python3 -m json.tool
 
 # Markets where both agents strongly disagreed with the price (edge <= -5%)
 curl "http://127.0.0.1:8000/analytics/strong-negative-edge?limit=20" | python3 -m json.tool
+
+# Latest decision per market — deduplicates history noise, sorted newest first
+curl "http://127.0.0.1:8000/analytics/latest-by-market?limit=20" | python3 -m json.tool
+
+# Latest decision per market, sorted by highest edge first (best value opportunities)
+curl "http://127.0.0.1:8000/analytics/top-edges?limit=20" | python3 -m json.tool
+
+# Latest decision per market, sorted by lowest edge first (most overpriced markets)
+curl "http://127.0.0.1:8000/analytics/bottom-edges?limit=20" | python3 -m json.tool
 ```
 
 ## Telegram Notifications
@@ -175,3 +184,6 @@ and `consensus_decisions`.
 | GET | /analytics/decision-summary | Aggregate decision stats |
 | GET | /analytics/near-bets | Decisions close to BET threshold |
 | GET | /analytics/strong-negative-edge | Decisions with edge ≤ -5% |
+| GET | /analytics/latest-by-market | Latest decision per market, newest first |
+| GET | /analytics/top-edges | Latest decision per market, best edge first |
+| GET | /analytics/bottom-edges | Latest decision per market, worst edge first |
