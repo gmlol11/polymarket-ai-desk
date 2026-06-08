@@ -2,14 +2,22 @@ from collections import defaultdict
 from typing import Any
 
 
+# Real sports terms only. "win the" was removed — it incorrectly matched
+# "win the ... election" and mislabeled political markets as sports.
 SPORT_KEYWORDS = [
     "world cup",
     "nba",
     "nhl",
+    "nfl",
+    "mlb",
     "fifa",
+    "super bowl",
     "finals",
     "stanley cup",
-    "win the",
+    "premier league",
+    "champions league",
+    "playoff",
+    "grand slam",
 ]
 
 MEME_KEYWORDS = [
@@ -26,16 +34,34 @@ CRYPTO_KEYWORDS = [
     "bitcoin",
     "btc",
     "ethereum",
+    "solana",
     "crypto",
 ]
 
+# Politics / geopolitics: elections, nominations, legislative control, named
+# political figures, and conflict. Checked before sports is not required since
+# sports keywords are now sport-specific.
 GEOPOLITICS_KEYWORDS = [
+    "election",
+    "presidential",
+    "president",
+    "nominee",
+    "nomination",
+    "senate",
+    "house",
+    "midterm",
+    "governor",
+    "balance of power",
+    "congress",
+    "parliament",
+    "prime minister",
+    "pardon",
+    "impeach",
     "china",
     "taiwan",
     "trump",
-    "president",
-    "election",
-    "war",
+    "putin",
+    "netanyahu",
     "invade",
     "invades",
 ]
@@ -44,14 +70,16 @@ GEOPOLITICS_KEYWORDS = [
 def classify_market(question: str) -> str:
     q = question.lower()
 
-    if any(keyword in q for keyword in SPORT_KEYWORDS):
-        return "sports"
+    # Politics first: election markets often say "win the ... Cup/Final" style
+    # phrasing, but the political keywords are unambiguous.
+    if any(keyword in q for keyword in GEOPOLITICS_KEYWORDS):
+        return "politics"
 
     if any(keyword in q for keyword in CRYPTO_KEYWORDS):
         return "crypto"
 
-    if any(keyword in q for keyword in GEOPOLITICS_KEYWORDS):
-        return "politics"
+    if any(keyword in q for keyword in SPORT_KEYWORDS):
+        return "sports"
 
     if any(keyword in q for keyword in MEME_KEYWORDS):
         return "meme"

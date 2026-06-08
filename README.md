@@ -202,6 +202,16 @@ blind spots:
 bash scripts/db_diagnostics.sh
 ```
 
+### Start the week with a clean slate (optional)
+
+Wipes accumulated decisions / agent runs / paper trades (keeps markets and
+snapshots). Useful to drop pre-fix decisions whose markets are now permanently
+filtered. Paper-only — no real funds involved.
+
+```bash
+bash scripts/reset_experiment_data.sh   # type 'reset' to confirm
+```
+
 ### Run manually
 
 ```bash
