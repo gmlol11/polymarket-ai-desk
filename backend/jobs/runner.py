@@ -14,6 +14,7 @@ from agents.research_agent import research_markets
 from agents.simple_filter import score_markets
 from backend.collectors.polymarket import sync_markets
 from backend.db.agent_history import save_agent_run, save_consensus_decision
+from backend.notifications.telegram import format_experiment_summary, send_telegram_message
 from backend.scanner import get_candidates
 
 SYNC_LIMIT = 50
@@ -28,7 +29,7 @@ def _filter_markets(researched: list, limit: int) -> list:
     ][:limit]
 
 
-async def run_experiment_cycle() -> dict[str, Any]:
+async def run_experiment_cycle(notify: bool = False) -> dict[str, Any]:
     started_at = datetime.now(timezone.utc)
 
     # 1. Sync latest markets from Polymarket
@@ -44,7 +45,7 @@ async def run_experiment_cycle() -> dict[str, Any]:
     filtered = _filter_markets(researched, CYCLE_MARKET_LIMIT)
 
     if not filtered:
-        return {
+        summary = {
             "started_at": started_at.isoformat(),
             "finished_at": datetime.now(timezone.utc).isoformat(),
             "duration_seconds": 0.0,
@@ -53,6 +54,14 @@ async def run_experiment_cycle() -> dict[str, Any]:
             "decisions": [],
             "status": "no_markets",
         }
+        if notify:
+            try:
+                text = format_experiment_summary(summary)
+                tg_result = await send_telegram_message(text)
+                summary["notification"] = tg_result
+            except Exception as exc:
+                summary["notification_error"] = str(exc)
+        return summary
 
     # 3. Full pipeline
     with_analyst = analyze_markets(filtered)
@@ -95,7 +104,7 @@ async def run_experiment_cycle() -> dict[str, Any]:
 
     finished_at = datetime.now(timezone.utc)
 
-    return {
+    summary = {
         "started_at": started_at.isoformat(),
         "finished_at": finished_at.isoformat(),
         "duration_seconds": round(
@@ -106,3 +115,13 @@ async def run_experiment_cycle() -> dict[str, Any]:
         "decisions": decisions,
         "status": "ok",
     }
+
+    if notify:
+        try:
+            text = format_experiment_summary(summary)
+            tg_result = await send_telegram_message(text)
+            summary["notification"] = tg_result
+        except Exception as exc:
+            summary["notification_error"] = str(exc)
+
+    return summary

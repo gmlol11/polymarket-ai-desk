@@ -70,6 +70,42 @@ Run one full cycle manually (sync + score + analyze up to 3 markets + persist):
 curl -X POST "http://127.0.0.1:8000/jobs/run-once" | python3 -m json.tool
 ```
 
+Run cycle with Telegram notification:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/jobs/run-once-notify" | python3 -m json.tool
+```
+
+## Telegram Notifications
+
+### Setup
+
+1. Open [@BotFather](https://t.me/BotFather) in Telegram, send `/newbot`, follow prompts
+2. Copy the token BotFather gives you → `TELEGRAM_BOT_TOKEN`
+3. Start a chat with your bot (or add it to a group)
+4. Get your `chat_id`:
+   ```bash
+   curl "https://api.telegram.org/bot<YOUR_TOKEN>/getUpdates"
+   ```
+   Find `"chat": {"id": ...}` in the response
+5. Add to `.env`:
+   ```
+   TELEGRAM_BOT_TOKEN=your_token_here
+   TELEGRAM_CHAT_ID=your_chat_id_here
+   ```
+
+### Test notification
+
+```bash
+curl -X POST "http://127.0.0.1:8000/notifications/test"
+```
+
+### Run cycle with notification
+
+```bash
+curl -X POST "http://127.0.0.1:8000/jobs/run-once-notify" | python3 -m json.tool
+```
+
 Check runner status:
 
 ```bash
@@ -98,4 +134,6 @@ and `consensus_decisions`.
 | GET | /agent-runs | Persisted agent run history |
 | GET | /consensus-decisions | Persisted consensus decision history |
 | POST | /jobs/run-once | Run one full experiment cycle manually |
+| POST | /jobs/run-once-notify | Run cycle and send Telegram notification |
 | GET | /jobs/status | Scheduler/runner status |
+| POST | /notifications/test | Send test Telegram message |

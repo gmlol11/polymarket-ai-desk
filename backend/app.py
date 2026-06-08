@@ -19,6 +19,7 @@ from backend.db.agent_history import (
     save_consensus_decision,
 )
 from backend.jobs.runner import run_experiment_cycle
+from backend.notifications.telegram import send_telegram_message
 from backend.scanner import get_candidates
 
 load_dotenv()
@@ -266,6 +267,11 @@ async def jobs_run_once():
     return await run_experiment_cycle()
 
 
+@app.post("/jobs/run-once-notify")
+async def jobs_run_once_notify():
+    return await run_experiment_cycle(notify=True)
+
+
 @app.get("/jobs/status")
 def jobs_status():
     return {
@@ -275,3 +281,9 @@ def jobs_status():
         "cycle_market_limit": 3,
         "sync_limit": 50,
     }
+
+
+@app.post("/notifications/test")
+async def notifications_test():
+    result = await send_telegram_message("Polymarket AI Desk notification test OK")
+    return result
