@@ -5,7 +5,7 @@ from typing import Any
 SCHEMA_VERSION = "1.0"
 
 MIN_EDGE_TO_BET = 0.05
-MIN_CONFIDENCE_TO_BET = 0.60
+MIN_CONFIDENCE_TO_BET = 0.65
 MIN_EDGE_TO_WATCH = 0.02
 
 
@@ -36,11 +36,15 @@ def _average_confidence(claude_confidence: float, challenger_confidence: float) 
     return round((claude_confidence + challenger_confidence) / 2, 4)
 
 
-def _make_decision(edge: float, confidence: float, modelable: bool) -> str:
+def _make_decision(
+    edge: float, confidence: float, modelable: bool, sides_agree: bool = True
+) -> str:
     if not modelable:
         return "SKIP"
     if edge >= MIN_EDGE_TO_BET and confidence >= MIN_CONFIDENCE_TO_BET:
-        return "BET"
+        if sides_agree:
+            return "BET"
+        return "NEEDS_MORE_RESEARCH"  # good numbers but agents disagree on direction
     if edge >= MIN_EDGE_TO_WATCH:
         return "WATCH"
     if edge < 0:
@@ -48,17 +52,21 @@ def _make_decision(edge: float, confidence: float, modelable: bool) -> str:
     return "NEEDS_MORE_RESEARCH"
 
 
-def _decision_reason(decision: str, edge: float, confidence: float, modelable: bool) -> str:
+def _decision_reason(
+    decision: str, edge: float, confidence: float, modelable: bool, sides_agree: bool = True
+) -> str:
     if not modelable:
         return "Market is not modelable."
     if decision == "BET":
-        return f"Edge {edge:.3f} and confidence {confidence:.2f} meet thresholds."
+        return f"Edge {edge:.3f}, confidence {confidence:.2f}, agents agree on direction."
     if decision == "WATCH":
         if confidence < MIN_CONFIDENCE_TO_BET:
             return f"Edge {edge:.3f} is acceptable but confidence {confidence:.2f} is below threshold."
         return f"Edge {edge:.3f} too small to bet."
     if decision == "SKIP":
         return f"No positive edge (edge={edge:.3f})."
+    if not sides_agree:
+        return "Agents disagree on direction — needs more research."
     return "Conflicting signals between analyst and challenger."
 
 
@@ -86,12 +94,13 @@ def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market:
     claude_confidence = float(analyst.get("confidence") or 0)
 
     if challenger_failed:
-        # Fall back to analyst-only consensus, lower confidence to reflect missing challenger
+        # Analyst-only fallback: lower confidence, no side agreement possible
         consensus_prob = claude_prob
         recommended_side = claude_side
         edge = _edge(consensus_prob, market_prob, recommended_side)
         confidence = round(claude_confidence * 0.75, 4)
-        decision = _make_decision(edge, confidence, modelable)
+        decision = _make_decision(edge, confidence, modelable, sides_agree=False)
+        reason = f"Challenger unavailable — analyst-only. {_decision_reason(decision, edge, confidence, modelable, sides_agree=False)}"
         return {
             "schema_version": SCHEMA_VERSION,
             "agent_name": "consensus_agent",
@@ -105,18 +114,20 @@ def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market:
             "confidence": confidence,
             "recommended_side": recommended_side,
             "decision": decision,
-            "reason": f"Challenger unavailable — analyst-only. {_decision_reason(decision, edge, confidence, modelable)}",
+            "reason": reason,
         }
 
     challenger_prob = float(challenger.get("estimated_probability") or 0)
     challenger_side = challenger.get("recommended_side") or "NONE"
     challenger_confidence = float(challenger.get("confidence") or 0)
 
+    sides_agree = claude_side == challenger_side and claude_side in ("YES", "NO")
+
     consensus_prob = _consensus_probability(claude_prob, challenger_prob)
     recommended_side = _resolve_side(claude_side, challenger_side, consensus_prob, market_prob)
     edge = _edge(consensus_prob, market_prob, recommended_side)
     confidence = _average_confidence(claude_confidence, challenger_confidence)
-    decision = _make_decision(edge, confidence, modelable)
+    decision = _make_decision(edge, confidence, modelable, sides_agree)
 
     return {
         "schema_version": SCHEMA_VERSION,
@@ -131,7 +142,7 @@ def build_consensus(analyst: dict[str, Any], challenger: dict[str, Any], market:
         "confidence": confidence,
         "recommended_side": recommended_side,
         "decision": decision,
-        "reason": _decision_reason(decision, edge, confidence, modelable),
+        "reason": _decision_reason(decision, edge, confidence, modelable, sides_agree),
     }
 
 

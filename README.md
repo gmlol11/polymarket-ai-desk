@@ -76,6 +76,25 @@ Run cycle with Telegram notification:
 curl -X POST "http://127.0.0.1:8000/jobs/run-once-notify" | python3 -m json.tool
 ```
 
+## Paper Portfolio
+
+No real funds are used. Paper trading simulates what would happen if every
+BET decision was followed with a fixed stake.
+
+- Default stake: **$1.00 per trade**
+- Only `BET` decisions create trades
+- `entry_probability` = market price for YES trades, `1 - market_price` for NO trades
+- `simulated_shares = stake / entry_probability`
+- Trades start with `status = "open"` (closing/PnL tracking is a future feature)
+
+```bash
+# List paper trades
+curl "http://127.0.0.1:8000/paper/trades" | python3 -m json.tool
+
+# Portfolio summary
+curl "http://127.0.0.1:8000/paper/summary" | python3 -m json.tool
+```
+
 ## Telegram Notifications
 
 ### Setup
@@ -137,3 +156,5 @@ and `consensus_decisions`.
 | POST | /jobs/run-once-notify | Run cycle and send Telegram notification |
 | GET | /jobs/status | Scheduler/runner status |
 | POST | /notifications/test | Send test Telegram message |
+| GET | /paper/trades | List simulated paper trades |
+| GET | /paper/summary | Paper portfolio summary stats |

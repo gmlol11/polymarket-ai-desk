@@ -18,6 +18,11 @@ from backend.db.agent_history import (
     save_agent_run,
     save_consensus_decision,
 )
+from backend.db.paper_portfolio import (
+    create_paper_trade_from_decision,
+    get_paper_summary,
+    list_paper_trades,
+)
 from backend.jobs.runner import run_experiment_cycle
 from backend.notifications.telegram import send_telegram_message
 from backend.scanner import get_candidates
@@ -245,7 +250,12 @@ async def consensus_agent(limit: int = 1):
             pass
 
         try:
-            save_consensus_decision(market_id, consensus)
+            decision_id = save_consensus_decision(market_id, consensus)
+            if consensus.get("decision") == "BET":
+                paper_trade = create_paper_trade_from_decision(
+                    {**consensus, "id": decision_id, "market_id": market_id}
+                )
+                item["paper_trade"] = paper_trade
         except Exception:
             pass
 
@@ -281,6 +291,16 @@ def jobs_status():
         "cycle_market_limit": 3,
         "sync_limit": 50,
     }
+
+
+@app.get("/paper/trades")
+def paper_trades(limit: int = 20):
+    return list_paper_trades(limit)
+
+
+@app.get("/paper/summary")
+def paper_summary():
+    return get_paper_summary()
 
 
 @app.post("/notifications/test")

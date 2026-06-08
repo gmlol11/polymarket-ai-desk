@@ -64,10 +64,18 @@ def format_experiment_summary(summary: dict[str, Any]) -> str:
         consensus = _pct(d.get("consensus_probability"))
         edge = _edge_str(d.get("edge"))
 
+        paper_trade = d.get("paper_trade")
+        if paper_trade:
+            trade_side = paper_trade.get("side", "?")
+            trade_stake = float(paper_trade.get("stake_usd") or 1.0)
+            trade_line = f"\n   💵 Paper trade opened: {trade_side} ${trade_stake:.2f}"
+        else:
+            trade_line = "\n   No paper trade"
+
         lines.append(
             f"\n{i}. {question}\n"
             f"   Market {yes_price} → Consensus {consensus} | Edge {edge}\n"
-            f"   {emoji} <b>{decision}</b>  Side: {side}"
+            f"   {emoji} <b>{decision}</b>  Side: {side}{trade_line}"
         )
 
     return "\n".join(lines)

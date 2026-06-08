@@ -14,6 +14,7 @@ from agents.research_agent import research_markets
 from agents.simple_filter import score_markets
 from backend.collectors.polymarket import sync_markets
 from backend.db.agent_history import save_agent_run, save_consensus_decision
+from backend.db.paper_portfolio import create_paper_trade_from_decision
 from backend.notifications.telegram import format_experiment_summary, send_telegram_message
 from backend.scanner import get_candidates
 
@@ -84,8 +85,13 @@ async def run_experiment_cycle(notify: bool = False) -> dict[str, Any]:
             save_agent_run(market_id, challenger)
         except Exception:
             pass
+        paper_trade = None
         try:
-            save_consensus_decision(market_id, consensus)
+            decision_id = save_consensus_decision(market_id, consensus)
+            if consensus.get("decision") == "BET":
+                paper_trade = create_paper_trade_from_decision(
+                    {**consensus, "id": decision_id, "market_id": market_id}
+                )
         except Exception:
             pass
 
@@ -100,6 +106,7 @@ async def run_experiment_cycle(notify: bool = False) -> dict[str, Any]:
             "confidence": consensus.get("confidence"),
             "recommended_side": consensus.get("recommended_side"),
             "decision": consensus.get("decision"),
+            "paper_trade": paper_trade,
         })
 
     finished_at = datetime.now(timezone.utc)

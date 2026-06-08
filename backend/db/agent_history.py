@@ -37,7 +37,8 @@ def save_agent_run(
 def save_consensus_decision(
     market_id: int,
     consensus_output: dict[str, Any],
-) -> None:
+) -> int:
+    """Inserts a consensus decision and returns its DB id."""
     with get_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -48,6 +49,7 @@ def save_consensus_decision(
                      edge, confidence, recommended_side, decision, reason,
                      output_json)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                RETURNING id
                 """,
                 (
                     market_id,
@@ -63,7 +65,9 @@ def save_consensus_decision(
                     Jsonb(consensus_output),
                 ),
             )
+            decision_id = cur.fetchone()[0]
         conn.commit()
+    return decision_id
 
 
 def list_agent_runs(limit: int = 20) -> list[dict[str, Any]]:
