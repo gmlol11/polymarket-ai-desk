@@ -238,10 +238,26 @@ docker exec -i polymarket_postgres psql -U polymarket_user -d polymarket_ai_desk
     < database/005_decision_category.sql
 ```
 
+### Keep the machine awake (required!)
+
+The host must not sleep: a sleeping Mac skips the 10:00 cycle, and a wake can
+leave the long-lived backend throttled (it accepts connections but never
+responds — this silently killed the 2026-06-10 run). Display sleep is fine.
+
+```bash
+sudo pmset -a sleep 0 disksleep 0
+pmset -g | head -20   # verify: sleep 0
+```
+
+The daily job also self-heals: it checks `/health` before the cycle,
+kickstarts the backend agent if it doesn't respond, and sends a Telegram
+alert if the cycle still fails — so silence only ever means "machine off".
+
 ### Install launchd automation (macOS)
 
 This sets up two LaunchAgents:
 - **Backend keep-alive**: starts FastAPI on login, restarts on crash
+  (`ProcessType=Interactive` exempts it from App Nap throttling)
 - **Daily 10:00 experiment**: calls `/jobs/run-once-notify` every day
 
 launchd owns the backend, so **stop any manually-started uvicorn first** —
