@@ -31,6 +31,13 @@
     <key>KeepAlive</key>
     <true/>
 
+    <!-- Exempt from App Nap / background throttling: after long idle (esp. across
+         system sleep) a Standard-type agent can stop being scheduled and silently
+         ignore incoming connections — observed on 2026-06-10 when the daily cycle
+         timed out against a frozen but "running" backend. -->
+    <key>ProcessType</key>
+    <string>Interactive</string>
+
     <key>StandardOutPath</key>
     <string>__PROJECT_PATH__/logs/backend_stdout.log</string>
     <key>StandardErrorPath</key>

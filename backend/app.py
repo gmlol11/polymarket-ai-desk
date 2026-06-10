@@ -65,7 +65,7 @@ REDIS_URL = os.getenv(
 
 
 def db_query(sql: str, params: tuple = ()):
-    with psycopg.connect(DATABASE_URL) as conn:
+    with psycopg.connect(DATABASE_URL, connect_timeout=10) as conn:
         with conn.cursor() as cur:
             cur.execute(sql, params)
             columns = [desc[0] for desc in cur.description]

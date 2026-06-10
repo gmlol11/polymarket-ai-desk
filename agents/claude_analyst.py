@@ -8,6 +8,12 @@ import anthropic
 SCHEMA_VERSION = "1.0"
 MODEL = "claude-opus-4-8"
 
+# Adaptive thinking tokens count toward max_tokens. With the old 1024 budget,
+# hard questions (e.g. Fed rate markets) spent nearly the whole budget on
+# thinking and the JSON answer was truncated mid-string — the chronic
+# "Unterminated string" / "Expecting value" analyst failures.
+MAX_TOKENS = 4096
+
 SYSTEM_PROMPT = """\
 You are a prediction market analyst. Given a Polymarket binary-outcome market,
 estimate the true probability that the event resolves YES, independent of the
@@ -57,24 +63,51 @@ def _build_user_message(market: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+def _extract_json(text: str) -> dict[str, Any]:
+    """Parse model output, tolerating markdown fences or stray prose around the JSON."""
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start != -1 and end > start:
+            return json.loads(text[start:end + 1])
+        raise
+
+
 def analyze_market(market: dict[str, Any]) -> dict[str, Any]:
     api_key = os.getenv("ANTHROPIC_API_KEY")
     client = anthropic.Anthropic(api_key=api_key)
 
-    response = client.messages.create(
-        model=MODEL,
-        max_tokens=1024,
-        thinking={"type": "adaptive"},
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": _build_user_message(market)}],
-    )
+    raw = None
+    last_exc: Exception | None = None
+    for _attempt in range(2):
+        response = client.messages.create(
+            model=MODEL,
+            max_tokens=MAX_TOKENS,
+            thinking={"type": "adaptive"},
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": _build_user_message(market)}],
+        )
 
-    text = next(
-        (block.text for block in response.content if hasattr(block, "text")),
-        "",
-    )
+        text = "".join(
+            block.text for block in response.content
+            if getattr(block, "type", "") == "text"
+        )
 
-    raw = json.loads(text)
+        try:
+            raw = _extract_json(text)
+            break
+        except json.JSONDecodeError as exc:
+            if response.stop_reason == "max_tokens":
+                last_exc = ValueError(
+                    f"Response truncated at {MAX_TOKENS} tokens: {exc}"
+                )
+            else:
+                last_exc = exc
+
+    if raw is None:
+        raise last_exc if last_exc else ValueError("No JSON in analyst response")
 
     return {
         "schema_version": SCHEMA_VERSION,

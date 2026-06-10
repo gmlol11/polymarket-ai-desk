@@ -53,7 +53,7 @@ def get_candidates(
         LIMIT %s;
     """
 
-    with psycopg.connect(DATABASE_URL) as conn:
+    with psycopg.connect(DATABASE_URL, connect_timeout=10) as conn:
         with conn.cursor() as cur:
             cur.execute(
                 sql,

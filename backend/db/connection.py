@@ -12,4 +12,6 @@ DATABASE_URL = os.getenv(
 
 
 def get_connection():
-    return psycopg.connect(DATABASE_URL)
+    # connect_timeout: a stalled DB (e.g. Docker VM resuming after system sleep)
+    # must fail fast instead of blocking the single-threaded event loop forever.
+    return psycopg.connect(DATABASE_URL, connect_timeout=10)
