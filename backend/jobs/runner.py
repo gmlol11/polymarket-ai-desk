@@ -16,6 +16,7 @@ from agents.research_agent import research_markets
 from agents.simple_filter import score_markets, select_diverse_candidates
 from backend.collectors.polymarket import sync_markets
 from backend.config import (
+    ANALYST_FAILURE_ALERT_RATIO,
     EXPERIMENT_MARKET_LIMIT,
     EXPERIMENT_MIN_DAYS_TO_RESOLUTION,
     EXPERIMENT_REANALYZE_COOLDOWN_HOURS,
@@ -142,12 +143,19 @@ async def run_experiment_cycle(
     # 7. Persist and build decision list
     decisions: list[dict[str, Any]] = []
     paper_trades_opened = 0
+    analyst_failures = 0
+    analyst_error_sample: str | None = None
 
     for item in results:
         market_id = item["id"]
         analyst = item.get("analyst") or {}
         challenger = item.get("challenger") or {}
         consensus = item.get("consensus") or {}
+
+        if "error" in analyst:
+            analyst_failures += 1
+            if analyst_error_sample is None:
+                analyst_error_sample = str(analyst.get("error"))[:200]
 
         try:
             save_agent_run(market_id, analyst)
@@ -189,6 +197,12 @@ async def run_experiment_cycle(
 
     finished_at = datetime.now(timezone.utc)
 
+    # Degradation check: a cycle where most analyst calls failed still
+    # "completes", but produced no real analysis (e.g. exhausted API credits).
+    # Flag it loudly instead of reporting a misleading "ok".
+    analyzed = len(decisions)
+    degraded = analyzed > 0 and (analyst_failures / analyzed) >= ANALYST_FAILURE_ALERT_RATIO
+
     summary = {
         "started_at": started_at.isoformat(),
         "finished_at": finished_at.isoformat(),
@@ -198,13 +212,15 @@ async def run_experiment_cycle(
         "cooldown_hours": _cooldown_hours,
         "min_days_to_resolution": _min_days,
         "sync": sync_result,
-        "markets_analyzed": len(decisions),
+        "markets_analyzed": analyzed,
         "analyzed_market_ids": [d["market_id"] for d in decisions],
         "skipped_recent_market_ids": skipped_recent_ids,
         "skipped_imminent_market_ids": skipped_imminent_ids,
         "decisions": decisions,
         "paper_trades_opened": paper_trades_opened,
-        "status": "ok",
+        "analyst_failures": analyst_failures,
+        "analyst_error_sample": analyst_error_sample,
+        "status": "degraded" if degraded else "ok",
     }
 
     if notify:

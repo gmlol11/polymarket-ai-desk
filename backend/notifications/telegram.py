@@ -33,6 +33,20 @@ def _edge_str(edge: float | None) -> str:
     return f"{sign}{edge * 100:.1f}%"
 
 
+def _failure_hint(error_sample: str | None) -> str:
+    """Turn a raw analyst error into a short, actionable hint."""
+    if not error_sample:
+        return "check API status"
+    s = error_sample.lower()
+    if "credit balance" in s or "too low" in s:
+        return "Anthropic credits exhausted — top up Plans &amp; Billing"
+    if "429" in s or "rate" in s or "overloaded" in s:
+        return "rate limited / overloaded"
+    if "401" in s or "authentication" in s or "api key" in s or "api_key" in s:
+        return "auth / API key problem"
+    return error_sample[:80]
+
+
 def format_experiment_summary(summary: dict[str, Any]) -> str:
     """
     Compact Telegram summary for experiment runs.
@@ -46,6 +60,7 @@ def format_experiment_summary(summary: dict[str, Any]) -> str:
     markets_synced = sync.get("markets_inserted_or_updated", sync.get("fetched", 0))
     markets_analyzed = summary.get("markets_analyzed", 0)
     decisions = summary.get("decisions", [])
+    analyst_failures = summary.get("analyst_failures", 0)
 
     bet_count = sum(1 for d in decisions if d.get("decision") == "BET")
     paper_trades_opened = summary.get("paper_trades_opened", bet_count)
@@ -53,7 +68,18 @@ def format_experiment_summary(summary: dict[str, Any]) -> str:
 
     skipped_line = f" | Skipped (cooldown): {skipped_recent}" if skipped_recent else ""
 
+    # Degradation banner first — a cycle that "completed" but produced no real
+    # analysis (e.g. exhausted credits) must not look like a normal quiet day.
+    banner = ""
+    if status == "degraded" or analyst_failures:
+        hint = _failure_hint(summary.get("analyst_error_sample"))
+        banner = (
+            f"⚠️ <b>DEGRADED</b> — analyst failed "
+            f"{analyst_failures}/{markets_analyzed}\n{hint}\n\n"
+        )
+
     header = (
+        f"{banner}"
         f"🤖 <b>Polymarket AI Desk</b>\n"
         f"Status: <b>{status}</b> | {duration}s\n"
         f"Synced: {markets_synced} | Analyzed: {markets_analyzed}{skipped_line}\n"

@@ -19,6 +19,7 @@ from backend.db.agent_history import (
     save_consensus_decision,
 )
 from backend.config import (
+    ANALYST_FAILURE_ALERT_RATIO,
     BET_EXCLUDE_SPORTS,
     BET_MAX_EDGE,
     BET_MIN_CONFIDENCE,
@@ -319,6 +320,7 @@ def jobs_status():
             "bet_max_edge": BET_MAX_EDGE,
             "bet_min_confidence": BET_MIN_CONFIDENCE,
             "bet_exclude_sports": BET_EXCLUDE_SPORTS,
+            "analyst_failure_alert_ratio": ANALYST_FAILURE_ALERT_RATIO,
         },
     }
 

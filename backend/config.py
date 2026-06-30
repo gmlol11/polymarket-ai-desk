@@ -69,3 +69,10 @@ BET_MAX_EDGE: float = _float("BET_MAX_EDGE", 0.25)
 # otherwise BET is downgraded to WATCH — it stays in analysis and category
 # analytics, but never opens a paper trade. Set False to bet sports too.
 BET_EXCLUDE_SPORTS: bool = _bool("BET_EXCLUDE_SPORTS", True)
+
+# ── Health / monitoring ───────────────────────────────────────────────────
+# If at least this fraction of analyzed markets fail at the analyst stage, the
+# cycle is reported as "degraded" and the Telegram summary carries a warning.
+# Catches silent brain-death (exhausted API credits, auth/rate errors) where
+# the cycle still "completes" but produces no real analysis.
+ANALYST_FAILURE_ALERT_RATIO: float = _float("ANALYST_FAILURE_ALERT_RATIO", 0.5)
