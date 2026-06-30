@@ -42,9 +42,11 @@ from backend.db.analytics import (
 from backend.db.paper_portfolio import (
     create_paper_trade_from_decision,
     get_paper_summary,
+    get_portfolio_state,
     list_paper_trades,
     mark_open_trades,
 )
+from backend.jobs.resolution import resolve_open_trades
 from backend.jobs.runner import run_experiment_cycle
 from backend.notifications.telegram import send_telegram_message
 from backend.scanner import get_candidates
@@ -333,6 +335,16 @@ def paper_trades(limit: int = 20):
 @app.get("/paper/summary")
 def paper_summary():
     return get_paper_summary()
+
+
+@app.get("/paper/portfolio")
+def paper_portfolio():
+    return get_portfolio_state()
+
+
+@app.post("/paper/resolve")
+async def paper_resolve():
+    return await resolve_open_trades()
 
 
 @app.get("/analytics/decision-summary")

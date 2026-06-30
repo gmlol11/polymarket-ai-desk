@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from typing import Any
 
@@ -8,6 +9,78 @@ from backend.db.connection import get_connection
 
 
 GAMMA_MARKETS_URL = "https://gamma-api.polymarket.com/markets"
+
+
+async def fetch_market_status(polymarket_id: str) -> dict[str, Any] | None:
+    """
+    Fetch a single market by its Polymarket id, regardless of closed status.
+
+    The daily sync only pulls active/open markets, so a resolved market drops
+    out of it entirely. Resolution tracking re-fetches by id to read the final
+    outcome. Returns the market dict, or None on any error / not found.
+    """
+    url = f"{GAMMA_MARKETS_URL}/{polymarket_id}"
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.get(url)
+            if response.status_code != 200:
+                return None
+            data = response.json()
+    except Exception:
+        return None
+
+    if isinstance(data, list):
+        return data[0] if data else None
+    return data
+
+
+def parse_resolution(market: dict[str, Any] | None) -> str | None:
+    """
+    Determine a cleanly-resolved binary outcome.
+
+    Returns "YES" or "NO" if the market is closed and one outcome resolved to ~1
+    while the other resolved to ~0. Returns None if the market is still open, was
+    voided (e.g. outcomePrices ["0","0"]), or is otherwise not cleanly resolved.
+
+    Gamma shape: outcomes='["Yes", "No"]', outcomePrices='["1", "0"]' (YES won)
+    or '["0", "1"]' (NO won), both JSON-encoded strings.
+    """
+    if not market or not market.get("closed"):
+        return None
+
+    outcomes = market.get("outcomes")
+    prices = market.get("outcomePrices")
+    if isinstance(outcomes, str):
+        try:
+            outcomes = json.loads(outcomes)
+        except Exception:
+            return None
+    if isinstance(prices, str):
+        try:
+            prices = json.loads(prices)
+        except Exception:
+            return None
+    if not outcomes or not prices or len(outcomes) != len(prices):
+        return None
+
+    resolved: dict[str, float] = {}
+    for label, price in zip(outcomes, prices):
+        try:
+            resolved[str(label).strip().lower()] = float(price)
+        except (TypeError, ValueError):
+            return None
+
+    yes = resolved.get("yes")
+    no = resolved.get("no")
+    if yes is None or no is None:
+        return None
+
+    WIN_THRESHOLD = 0.99
+    if yes >= WIN_THRESHOLD and no <= (1 - WIN_THRESHOLD):
+        return "YES"
+    if no >= WIN_THRESHOLD and yes <= (1 - WIN_THRESHOLD):
+        return "NO"
+    return None  # void / disputed / not cleanly resolved
 
 
 def _parse_datetime(value: str | None):

@@ -190,6 +190,84 @@ def mark_open_trades() -> list[dict[str, Any]]:
     return updated
 
 
+def list_open_trades_for_resolution() -> list[dict[str, Any]]:
+    """Open trades joined with their Polymarket id, for resolution checking."""
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT pt.id, pt.market_id, m.polymarket_id, pt.side,
+                       pt.simulated_shares, pt.stake_usd
+                FROM paper_trades pt
+                JOIN markets m ON m.id = pt.market_id
+                WHERE pt.status = 'open'
+                """
+            )
+            cols = [d[0] for d in cur.description]
+            return [dict(zip(cols, r)) for r in cur.fetchall()]
+
+
+def close_paper_trade(
+    trade_id: int, exit_probability: float, realized_pnl: float
+) -> dict[str, Any] | None:
+    """
+    Close an open paper trade with its resolved outcome.
+
+    exit_probability is 1.0 if the bet side won, 0.0 if it lost.
+    realized_pnl = simulated_shares * exit_probability - stake_usd.
+    Returns the closed row, or None if the trade was not open.
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE paper_trades
+                SET status = 'closed',
+                    exit_probability = %s,
+                    realized_pnl = %s,
+                    closed_at = NOW()
+                WHERE id = %s AND status = 'open'
+                RETURNING id, market_id, side, entry_probability,
+                          exit_probability, realized_pnl, stake_usd,
+                          status, closed_at
+                """,
+                (round(exit_probability, 4), round(realized_pnl, 4), trade_id),
+            )
+            row = cur.fetchone()
+            cols = [d[0] for d in cur.description] if cur.description else []
+        conn.commit()
+    return dict(zip(cols, row)) if row else None
+
+
+def get_portfolio_state() -> dict[str, Any]:
+    """
+    Whole-portfolio snapshot: open vs closed, win/loss record, realized and
+    unrealized P&L, and net. The operational view shown in Telegram.
+    """
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    COUNT(*) FILTER (WHERE status = 'open')   AS open_trades,
+                    COUNT(*) FILTER (WHERE status = 'closed') AS closed_trades,
+                    COUNT(*) FILTER (WHERE status = 'closed' AND realized_pnl > 0)  AS wins,
+                    COUNT(*) FILTER (WHERE status = 'closed' AND realized_pnl <= 0) AS losses,
+                    COALESCE(SUM(realized_pnl)   FILTER (WHERE status = 'closed'), 0) AS realized_pnl,
+                    COALESCE(SUM(unrealized_pnl) FILTER (WHERE status = 'open'), 0)   AS unrealized_pnl,
+                    COALESCE(SUM(stake_usd), 0)  AS total_stake
+                FROM paper_trades
+                """
+            )
+            cols = [d[0] for d in cur.description]
+            state = dict(zip(cols, cur.fetchone()))
+
+    state["realized_pnl"] = round(float(state["realized_pnl"]), 4)
+    state["unrealized_pnl"] = round(float(state["unrealized_pnl"]), 4)
+    state["net_pnl"] = round(state["realized_pnl"] + state["unrealized_pnl"], 4)
+    return state
+
+
 def get_paper_summary() -> dict[str, Any]:
     with get_connection() as conn:
         with conn.cursor() as cur:

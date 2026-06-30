@@ -25,9 +25,35 @@ from backend.config import (
 )
 from backend.db.agent_history import save_agent_run, save_consensus_decision
 from backend.db.analytics import get_recently_analyzed_market_ids
-from backend.db.paper_portfolio import create_paper_trade_from_decision
+from backend.db.paper_portfolio import (
+    create_paper_trade_from_decision,
+    get_portfolio_state,
+    mark_open_trades,
+)
+from backend.jobs.resolution import resolve_open_trades
 from backend.notifications.telegram import format_experiment_summary, send_telegram_message
 from backend.scanner import get_candidates
+
+
+async def _refresh_portfolio() -> tuple[dict[str, Any], dict[str, Any]]:
+    """
+    Run every cycle, independent of whether new markets were analyzed:
+    resolve any settled trades, mark the rest to market, return (resolution,
+    portfolio_state). Each step is best-effort so a failure can't abort the run.
+    """
+    try:
+        resolution = await resolve_open_trades()
+    except Exception as exc:
+        resolution = {"error": str(exc)}
+    try:
+        mark_open_trades()
+    except Exception:
+        pass
+    try:
+        portfolio = get_portfolio_state()
+    except Exception as exc:
+        portfolio = {"error": str(exc)}
+    return resolution, portfolio
 
 
 async def run_experiment_cycle(
@@ -108,6 +134,7 @@ async def run_experiment_cycle(
     selected = select_diverse_candidates(fresh, _market_limit)
 
     if not selected:
+        resolution, portfolio = await _refresh_portfolio()
         finished_at = datetime.now(timezone.utc)
         summary: dict[str, Any] = {
             "started_at": started_at.isoformat(),
@@ -124,6 +151,8 @@ async def run_experiment_cycle(
             "skipped_imminent_market_ids": skipped_imminent_ids,
             "decisions": [],
             "paper_trades_opened": 0,
+            "resolution": resolution,
+            "portfolio": portfolio,
             "status": "no_markets",
         }
         if notify:
@@ -195,6 +224,9 @@ async def run_experiment_cycle(
             "paper_trade": paper_trade,
         })
 
+    # Resolve settled trades, mark the rest, snapshot the portfolio.
+    resolution, portfolio = await _refresh_portfolio()
+
     finished_at = datetime.now(timezone.utc)
 
     # Degradation check: a cycle where most analyst calls failed still
@@ -220,6 +252,8 @@ async def run_experiment_cycle(
         "paper_trades_opened": paper_trades_opened,
         "analyst_failures": analyst_failures,
         "analyst_error_sample": analyst_error_sample,
+        "resolution": resolution,
+        "portfolio": portfolio,
         "status": "degraded" if degraded else "ok",
     }
 

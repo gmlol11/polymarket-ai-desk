@@ -82,17 +82,29 @@ No real funds are used. Paper trading simulates what would happen if every
 BET decision was followed with a fixed stake.
 
 - Default stake: **$1.00 per trade**
-- Only `BET` decisions create trades
+- Only `BET` decisions create trades; at most one open trade per market (dedup)
 - `entry_probability` = market price for YES trades, `1 - market_price` for NO trades
 - `simulated_shares = stake / entry_probability`
-- Trades start with `status = "open"` (closing/PnL tracking is a future feature)
+- Trades start `status = "open"`; **resolution tracking** closes them when the
+  market settles: `exit_probability` = 1.0 if the bet side won else 0.0, and
+  `realized_pnl = simulated_shares * exit_probability - stake`.
+
+Each daily cycle automatically resolves settled trades, marks the rest to
+market, and reports the portfolio (wins/losses, realized + unrealized + net
+P&L) in the Telegram summary.
 
 ```bash
 # List paper trades
 curl "http://127.0.0.1:8000/paper/trades" | python3 -m json.tool
 
-# Portfolio summary
+# Counts + stake (lightweight)
 curl "http://127.0.0.1:8000/paper/summary" | python3 -m json.tool
+
+# Portfolio P&L: open/closed, W/L, realized + unrealized + net
+curl "http://127.0.0.1:8000/paper/portfolio" | python3 -m json.tool
+
+# Force a resolution check now (also runs automatically each cycle)
+curl -X POST "http://127.0.0.1:8000/paper/resolve" | python3 -m json.tool
 ```
 
 ## Analytics
@@ -340,7 +352,9 @@ bash scripts/uninstall_launchd.sh
 | POST | /notifications/test | Send test Telegram message |
 | GET | /paper/trades | List simulated paper trades |
 | GET | /paper/summary | Paper portfolio summary stats |
+| GET | /paper/portfolio | Portfolio P&L: open/closed, W/L, realized + unrealized + net |
 | POST | /paper/mark-to-market | Compute unrealized PnL from current snapshot prices |
+| POST | /paper/resolve | Close trades whose markets have resolved; compute realized PnL |
 | GET | /analytics/decision-summary | Aggregate decision stats |
 | GET | /analytics/near-bets | Decisions close to BET threshold |
 | GET | /analytics/strong-negative-edge | Decisions with edge ≤ -5% |

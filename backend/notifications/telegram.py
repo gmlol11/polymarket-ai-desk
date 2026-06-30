@@ -33,6 +33,43 @@ def _edge_str(edge: float | None) -> str:
     return f"{sign}{edge * 100:.1f}%"
 
 
+def _money(value: float | None) -> str:
+    if value is None:
+        return "n/a"
+    return f"{'+' if value >= 0 else '-'}${abs(value):.2f}"
+
+
+def _portfolio_block(summary: dict[str, Any]) -> str:
+    """Operational P&L block: wins/losses, realized + unrealized, net."""
+    p = summary.get("portfolio") or {}
+    if not p or "error" in p:
+        return ""
+
+    open_n = p.get("open_trades", 0)
+    closed_n = p.get("closed_trades", 0)
+    wins = p.get("wins", 0)
+    losses = p.get("losses", 0)
+    realized = float(p.get("realized_pnl") or 0)
+    unrealized = float(p.get("unrealized_pnl") or 0)
+    net = float(p.get("net_pnl") or 0)
+
+    lines = [
+        "💼 <b>Portfolio</b>",
+        f"Open: {open_n} | Closed: {closed_n} ({wins}W / {losses}L)",
+        f"Realized: {_money(realized)} | Unrealized: {_money(unrealized)}"
+        f" | Net: <b>{_money(net)}</b>",
+    ]
+
+    res = summary.get("resolution") or {}
+    if res.get("resolved"):
+        lines.append(
+            f"✅ Resolved this cycle: {res['resolved']} "
+            f"({res.get('wins', 0)}W / {res.get('losses', 0)}L) "
+            f"{_money(res.get('realized_pnl_delta'))}"
+        )
+    return "\n".join(lines)
+
+
 def _failure_hint(error_sample: str | None) -> str:
     """Turn a raw analyst error into a short, actionable hint."""
     if not error_sample:
@@ -86,8 +123,11 @@ def format_experiment_summary(summary: dict[str, Any]) -> str:
         f"🎯 BET: {bet_count} | 💵 Paper trades: {paper_trades_opened}"
     )
 
+    portfolio_block = _portfolio_block(summary)
+    portfolio_tail = ("\n\n" + portfolio_block) if portfolio_block else ""
+
     if not decisions:
-        return header + "\n\nNo actionable markets found."
+        return header + "\n\nNo actionable markets found." + portfolio_tail
 
     # Top 5 by absolute edge — most interesting regardless of direction
     top5 = sorted(decisions, key=lambda d: abs(d.get("edge") or 0), reverse=True)[:5]
@@ -116,7 +156,7 @@ def format_experiment_summary(summary: dict[str, Any]) -> str:
     if total > 5:
         lines.append(f"\n…and {total - 5} more saved to DB.")
 
-    return "\n".join(lines)
+    return "\n".join(lines) + portfolio_tail
 
 
 async def send_telegram_message(text: str) -> dict[str, Any]:
