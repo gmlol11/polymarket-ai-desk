@@ -20,7 +20,12 @@ def create_paper_trade_from_decision(
 ) -> dict[str, Any] | None:
     """
     Creates a paper trade for a BET decision.
-    Returns the created trade dict or None if decision is not BET.
+    Returns the created trade dict, or None if:
+      - the decision is not BET, or
+      - the entry probability is non-positive, or
+      - the market already has an open paper trade (dedup — one position per
+        market, so a recurring conviction re-bet every cooldown cycle doesn't
+        accumulate duplicate exposure to the same outcome).
 
     Expected fields in `decision`:
       - id: consensus_decisions.id (DB row id)
@@ -49,6 +54,16 @@ def create_paper_trade_from_decision(
 
     with get_connection() as conn:
         with conn.cursor() as cur:
+            # Dedup: skip if an open position already exists for this market.
+            # Checked in the same transaction as the insert to avoid a race.
+            cur.execute(
+                "SELECT 1 FROM paper_trades "
+                "WHERE market_id = %s AND status = 'open' LIMIT 1",
+                (market_id,),
+            )
+            if cur.fetchone() is not None:
+                return None
+
             cur.execute(
                 """
                 INSERT INTO paper_trades
