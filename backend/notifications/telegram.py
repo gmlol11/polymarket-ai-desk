@@ -82,7 +82,9 @@ def _failure_hint(error_sample: str | None) -> str:
     if "429" in s or "rate" in s or "overloaded" in s:
         return "rate limited / overloaded"
     if "403" in s or "forbidden" in s or "not allowed" in s:
-        return "API access forbidden (403) — check the Anthropic API key"
+        # Anthropic surfaces an empty balance as 403 as well as via the 400
+        # "credit balance too low" message, so point at both.
+        return "API access forbidden (403) — check Anthropic key and balance"
     if "401" in s or "authentication" in s or "api key" in s or "api_key" in s:
         return "auth / API key problem"
     # Unknown error: HTML-escape the raw snippet so it can't break parse_mode.
