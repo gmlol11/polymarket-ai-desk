@@ -161,7 +161,7 @@ async def run_experiment_cycle(
                 tg = await send_telegram_message(text)
                 summary["notification"] = tg
             except Exception as exc:
-                summary["notification_error"] = str(exc)
+                summary["notification_error"] = repr(exc)
         return summary
 
     # 6. Full agent pipeline

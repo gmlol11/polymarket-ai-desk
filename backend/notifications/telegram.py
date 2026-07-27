@@ -5,7 +5,9 @@ Reads TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID from environment.
 Uses plain httpx (already a project dependency) — no extra SDK needed.
 """
 
+import html
 import os
+import re
 from typing import Any
 
 import httpx
@@ -79,9 +81,12 @@ def _failure_hint(error_sample: str | None) -> str:
         return "Anthropic credits exhausted — top up Plans &amp; Billing"
     if "429" in s or "rate" in s or "overloaded" in s:
         return "rate limited / overloaded"
+    if "403" in s or "forbidden" in s or "not allowed" in s:
+        return "API access forbidden (403) — check the Anthropic API key"
     if "401" in s or "authentication" in s or "api key" in s or "api_key" in s:
         return "auth / API key problem"
-    return error_sample[:80]
+    # Unknown error: HTML-escape the raw snippet so it can't break parse_mode.
+    return html.escape(error_sample[:80])
 
 
 def format_experiment_summary(summary: dict[str, Any]) -> str:
@@ -159,7 +164,21 @@ def format_experiment_summary(summary: dict[str, Any]) -> str:
     return "\n".join(lines) + portfolio_tail
 
 
+async def _tg_post(url: str, payload: dict[str, Any]) -> dict[str, Any]:
+    async with httpx.AsyncClient(timeout=10) as client:
+        response = await client.post(url, json=payload)
+        try:
+            return response.json()
+        except Exception:
+            return {"ok": False, "error": f"non-JSON response (HTTP {response.status_code})"}
+
+
 async def send_telegram_message(text: str) -> dict[str, Any]:
+    """
+    Send a message, never raising. Tries rich HTML first; if that fails to parse
+    or errors, retries as plain text so an alert (e.g. the degradation banner)
+    always gets through. Any HTML failure is recorded under `html_error`.
+    """
     token = os.getenv("TELEGRAM_BOT_TOKEN", "")
     chat_id = os.getenv("TELEGRAM_CHAT_ID", "")
 
@@ -167,13 +186,26 @@ async def send_telegram_message(text: str) -> dict[str, Any]:
         return {"ok": False, "error": "TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set"}
 
     url = f"{TELEGRAM_API}/bot{token}/sendMessage"
-    payload = {
-        "chat_id": chat_id,
-        "text": text,
-        "parse_mode": "HTML",
-        "disable_web_page_preview": True,
-    }
+    base = {"chat_id": chat_id, "disable_web_page_preview": True}
 
-    async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.post(url, json=payload)
-        return response.json()
+    # Attempt 1: rich HTML
+    html_error: Any = None
+    try:
+        result = await _tg_post(url, {**base, "text": text, "parse_mode": "HTML"})
+        if result.get("ok"):
+            return result
+        html_error = result.get("description", result)
+    except Exception as exc:
+        html_error = repr(exc)
+
+    # Attempt 2: plain text (strip tags, no parse_mode) — guarantees delivery
+    # even if the HTML message failed to parse or the send raised.
+    plain = re.sub(r"<[^>]+>", "", text)
+    try:
+        result = await _tg_post(url, {**base, "text": plain})
+    except Exception as exc:
+        return {"ok": False, "error": repr(exc), "html_error": html_error}
+
+    result["fallback"] = "plain_text"
+    result["html_error"] = html_error
+    return result
