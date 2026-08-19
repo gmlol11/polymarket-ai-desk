@@ -1,9 +1,11 @@
 import os
+from pathlib import Path
 
 import psycopg
 import redis
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import HTMLResponse
 
 from agents.claude_analyst import analyze_markets
 from agents.consensus_agent import run_consensus
@@ -340,6 +342,15 @@ def paper_summary():
 @app.get("/paper/portfolio")
 def paper_portfolio():
     return get_portfolio_state()
+
+
+_DASHBOARD_FILE = Path(__file__).parent / "dashboard.html"
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def dashboard():
+    # Read per request so the page can be tweaked without restarting the server.
+    return _DASHBOARD_FILE.read_text(encoding="utf-8")
 
 
 @app.post("/paper/resolve")

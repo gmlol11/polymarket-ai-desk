@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Polymarket AI Desk — портфель</title>
+<style>
+  :root{
+    --bg:#0e0f12; --panel:#15171c; --line:#23262e; --line-soft:#1c1f26;
+    --txt:#e7e8ea; --muted:#8b909b; --faint:#5b606b;
+    --accent:#5b8def; --pos:#3fb950; --neg:#f85149; --zero:#8b909b;
+    --radius:14px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#f6f7f9; --panel:#ffffff; --line:#e4e7ec; --line-soft:#eef0f3;
+      --txt:#171a1f; --muted:#5c626d; --faint:#9aa0ab;
+      --accent:#2f6bd6; --pos:#1a7f37; --neg:#cf222e; --zero:#5c626d;
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--txt);
+    font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .num{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace; font-variant-numeric:tabular-nums}
+  .wrap{max-width:960px; margin:0 auto; padding:28px 20px 80px}
+  header{display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:32px}
+  .brand{font-size:17px; font-weight:600; letter-spacing:-.01em}
+  .brand .dot{color:var(--accent)}
+  .brand small{display:block; font-weight:400; color:var(--muted); font-size:12.5px; margin-top:2px}
+  .upd{color:var(--faint); font-size:12.5px; text-align:right}
+  button.refresh{
+    margin-top:6px; background:transparent; color:var(--muted); border:1px solid var(--line);
+    border-radius:8px; padding:4px 10px; font-size:12.5px; cursor:pointer; transition:.15s;
+  }
+  button.refresh:hover{color:var(--txt); border-color:var(--faint)}
+  button.refresh:active{transform:translateY(1px)}
+
+  .hero{margin-bottom:36px}
+  .hero .label{color:var(--muted); font-size:12.5px; text-transform:uppercase; letter-spacing:.08em}
+  .hero .big{font-size:52px; line-height:1.05; font-weight:650; letter-spacing:-.02em; margin:6px 0 4px}
+  .hero .sub{color:var(--muted); font-size:14px}
+  .hero .sub b{color:var(--txt); font-weight:600}
+
+  .tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:1px; background:var(--line);
+    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; margin-bottom:36px}
+  .tile{background:var(--panel); padding:16px 18px}
+  .tile .t-label{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em}
+  .tile .t-val{font-size:24px; font-weight:600; margin-top:6px; letter-spacing:-.01em}
+  .tile .t-note{color:var(--faint); font-size:12px; margin-top:2px}
+
+  h2{font-size:13px; text-transform:uppercase; letter-spacing:.09em; color:var(--muted);
+    font-weight:600; margin:0 0 14px}
+  section{margin-bottom:40px}
+
+  .timeline{display:grid; grid-template-columns:1fr; gap:14px}
+  .near{border:1px solid var(--line); border-radius:var(--radius); padding:16px 18px; background:var(--panel)}
+  .near .q{font-weight:500}
+  .near .meta{color:var(--muted); font-size:13px; margin-top:4px}
+  .buckets{display:flex; flex-direction:column; gap:8px}
+  .brow{display:grid; grid-template-columns:70px 1fr 34px; align-items:center; gap:10px; font-size:13px}
+  .brow .mo{color:var(--muted)}
+  .brow .bar{height:8px; border-radius:5px; background:var(--accent); opacity:.85; min-width:4px}
+  .brow .bc{color:var(--muted); text-align:right}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px}
+  th{text-align:left; color:var(--muted); font-weight:500; font-size:11.5px; text-transform:uppercase;
+    letter-spacing:.05em; padding:0 10px 10px; border-bottom:1px solid var(--line)}
+  th.r,td.r{text-align:right}
+  td{padding:11px 10px; border-bottom:1px solid var(--line-soft)}
+  tr:last-child td{border-bottom:none}
+  td.q{max-width:340px}
+  .side{display:inline-block; font-size:11px; font-weight:600; padding:1px 7px; border-radius:5px;
+    border:1px solid var(--line)}
+  .side.NO{color:var(--neg)} .side.YES{color:var(--pos)}
+  .st{color:var(--faint); font-size:12px}
+  .pos{color:var(--pos)} .neg{color:var(--neg)} .zero{color:var(--zero)}
+
+  .funnel{display:grid; grid-template-columns:repeat(5,1fr); gap:1px; background:var(--line);
+    border:1px solid var(--line); border-radius:var(--radius); overflow:hidden}
+  .fcell{background:var(--panel); padding:14px 16px}
+  .fcell .fv{font-size:20px; font-weight:600}
+  .fcell .fl{color:var(--muted); font-size:12px; margin-top:3px}
+
+  .err{color:var(--neg); font-size:14px}
+  .skel{color:var(--faint)}
+  @media (max-width:640px){
+    .tiles,.funnel{grid-template-columns:repeat(2,1fr)}
+    .hero .big{font-size:40px}
+    td.q{max-width:180px}
+    .hide-sm{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">Polymarket AI Desk<span class="dot">.</span>
+      <small>бумажный портфель · только моделируемые рынки</small></div>
+    <div><div class="upd" id="upd">загрузка…</div>
+      <button class="refresh" onclick="load()">обновить</button></div>
+  </header>
+
+  <div id="body"><p class="skel">Загрузка данных…</p></div>
+</div>
+
+<script>
+const API = ""; // same origin
+const fmtMoney = v => (v>=0?"+":"−") + "$" + Math.abs(v).toFixed(2);
+const cls = v => v>0?"pos":v<0?"neg":"zero";
+const pct = v => v==null?"—":(v*100).toFixed(1)+"%";
+const esc = s => (s||"").replace(/[&<>]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+function daysTo(iso){
+  if(!iso) return null;
+  return Math.round((new Date(iso+"T00:00:00Z") - Date.now())/86400000);
+}
+function whenTxt(iso){
+  const d = daysTo(iso);
+  if(d==null) return "нет даты";
+  if(d<0) return iso+" ("+(-d)+" дн назад)";
+  return iso+" (через "+d+" дн)";
+}
+
+async function getJSON(path){
+  const r = await fetch(API+path);
+  if(!r.ok) throw new Error(path+" → "+r.status);
+  return r.json();
+}
+
+async function load(){
+  const el = document.getElementById("body");
+  document.getElementById("upd").textContent = "обновление…";
+  try{
+    const [p, trades, f] = await Promise.all([
+      getJSON("/paper/portfolio"),
+      getJSON("/paper/trades?limit=100"),
+      getJSON("/analytics/decision-summary"),
+    ]);
+    el.innerHTML = render(p, trades, f);
+    document.getElementById("upd").textContent =
+      "обновлено " + new Date().toLocaleTimeString("ru-RU",{hour:"2-digit",minute:"2-digit"});
+  }catch(e){
+    el.innerHTML = '<p class="err">Ошибка: '+esc(e.message)+
+      '<br><span class="skel">бэкенд недоступен?</span></p>';
+    document.getElementById("upd").textContent = "ошибка";
+  }
+}
+
+function render(p, trades, f){
+  const net = +p.net_pnl||0, real=+p.realized_pnl||0, unr=+p.unrealized_pnl||0;
+  const tl = p.timeline||{};
+  // hero + tiles
+  let h = `
+  <div class="hero">
+    <div class="label">итог P&L (бумажный)</div>
+    <div class="big num ${cls(net)}">${fmtMoney(net)}</div>
+    <div class="sub">реализ. <b class="num ${cls(real)}">${fmtMoney(real)}</b> ·
+      нереализ. <b class="num ${cls(unr)}">${fmtMoney(unr)}</b> ·
+      в деле <b class="num">$${(+p.total_stake||0).toFixed(0)}</b></div>
+  </div>
+  <div class="tiles">
+    <div class="tile"><div class="t-label">Открыто</div><div class="t-val num">${p.open_trades||0}</div><div class="t-note">ставок</div></div>
+    <div class="tile"><div class="t-label">Закрыто</div><div class="t-val num">${p.closed_trades||0}</div><div class="t-note">${p.wins||0}П / ${p.losses||0}М</div></div>
+    <div class="tile"><div class="t-label">Ставок всего</div><div class="t-val num">${f.bet_count||0}</div><div class="t-note">из ${f.total_decisions||0} решений</div></div>
+    <div class="tile"><div class="t-label">Ср. уверенность</div><div class="t-val num">${pct(f.avg_confidence)}</div><div class="t-note">ср. edge ${pct(f.avg_edge)}</div></div>
+  </div>`;
+
+  // timeline
+  const near = tl.nearest;
+  const buckets = tl.buckets||{};
+  const maxB = Math.max(1, ...Object.values(buckets));
+  const bucketRows = Object.keys(buckets).sort().map(mo=>`
+    <div class="brow"><span class="mo num">${mo}</span>
+      <span class="bar" style="width:${Math.round(buckets[mo]/maxB*100)}%"></span>
+      <span class="bc num">${buckets[mo]}</span></div>`).join("");
+  h += `<section>
+    <h2>Сроки резолюции</h2>
+    <div class="timeline">
+      <div class="near">
+        ${near ? `<div class="q">${esc(near.question)}</div>
+          <div class="meta">ближайшее закрытие · <span class="num">${whenTxt(near.end_date)}</span></div>`
+        : `<div class="meta">открытых ставок с датой резолюции нет</div>`}
+        <div class="meta">в ближайшие 30 дней: <b class="num">${tl.resolving_30d||0}</b> ·
+          без даты: <b class="num">${tl.no_date||0}</b></div>
+      </div>
+      ${bucketRows ? `<div class="buckets">${bucketRows}</div>` : ""}
+    </div></section>`;
+
+  // trades table
+  const rows = trades.map(t=>{
+    const open = t.status==="open";
+    const pnl = open ? (t.unrealized_pnl==null?null:+t.unrealized_pnl)
+                     : (t.realized_pnl==null?null:+t.realized_pnl);
+    const pnlHtml = pnl==null ? '<span class="zero">—</span>'
+      : `<span class="num ${cls(pnl)}">${fmtMoney(pnl)}</span>`;
+    const cur = open ? pct(t.current_probability) : (t.status==="closed"? (t.exit_probability==1?"выигрыш":"проигрыш") : "—");
+    return `<tr>
+      <td class="q">${esc(t.question||("рынок #"+t.market_id))}</td>
+      <td><span class="side ${t.side}">${t.side}</span></td>
+      <td class="r num">${pct(t.entry_probability)}</td>
+      <td class="r num hide-sm">${cur}</td>
+      <td class="r">${pnlHtml}</td>
+      <td class="r st hide-sm">${open? esc(whenTxt(t.end_date?String(t.end_date).slice(0,10):null)) : "закрыт"}</td>
+    </tr>`;
+  }).join("");
+  h += `<section>
+    <h2>Ставки (${trades.length})</h2>
+    <table><thead><tr>
+      <th>Рынок</th><th>Сторона</th><th class="r">Вход</th>
+      <th class="r hide-sm">Текущ.</th><th class="r">P&L</th><th class="r hide-sm">Резолюция</th>
+    </tr></thead><tbody>${rows||'<tr><td colspan="6" class="skel">пусто</td></tr>'}</tbody></table>
+  </section>`;
+
+  // funnel
+  const dc = f;
+  h += `<section>
+    <h2>Воронка решений</h2>
+    <div class="funnel">
+      <div class="fcell"><div class="fv num">${dc.total_decisions||0}</div><div class="fl">всего</div></div>
+      <div class="fcell"><div class="fv num">${dc.bet_count||0}</div><div class="fl">BET</div></div>
+      <div class="fcell"><div class="fv num">${dc.watch_count||0}</div><div class="fl">WATCH</div></div>
+      <div class="fcell"><div class="fv num">${dc.needs_more_research_count||0}</div><div class="fl">NMR</div></div>
+      <div class="fcell"><div class="fv num">${dc.skip_count||0}</div><div class="fl">SKIP</div></div>
+    </div></section>`;
+
+  return h;
+}
+load();
+</script>
+</body>
+</html>

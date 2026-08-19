@@ -98,9 +98,10 @@ def list_paper_trades(limit: int = 20) -> list[dict[str, Any]]:
                 """
                 SELECT
                     pt.id, pt.consensus_decision_id, pt.market_id,
-                    m.question,
+                    m.question, m.end_date,
                     pt.side, pt.entry_probability, pt.stake_usd,
                     pt.simulated_shares, pt.status,
+                    pt.current_probability, pt.unrealized_pnl,
                     pt.exit_probability, pt.realized_pnl,
                     pt.opened_at, pt.closed_at
                 FROM paper_trades pt
@@ -262,10 +263,59 @@ def get_portfolio_state() -> dict[str, Any]:
             cols = [d[0] for d in cur.description]
             state = dict(zip(cols, cur.fetchone()))
 
+            # Resolution timeline over open trades (join markets.end_date).
+            cur.execute(
+                """
+                SELECT m.end_date, m.question
+                FROM paper_trades pt
+                JOIN markets m ON m.id = pt.market_id
+                WHERE pt.status = 'open'
+                """
+            )
+            open_rows = cur.fetchall()
+
     state["realized_pnl"] = round(float(state["realized_pnl"]), 4)
     state["unrealized_pnl"] = round(float(state["unrealized_pnl"]), 4)
     state["net_pnl"] = round(state["realized_pnl"] + state["unrealized_pnl"], 4)
+    state["timeline"] = _build_timeline(open_rows)
     return state
+
+
+def _build_timeline(open_rows: list) -> dict[str, Any]:
+    """From (end_date, question) rows of open trades: nearest resolution,
+    count resolving within 30 days, count with no date, and per-month buckets."""
+    now = datetime.now(timezone.utc)
+    dated = []
+    no_date = 0
+    for end_date, question in open_rows:
+        if end_date is None:
+            no_date += 1
+            continue
+        ed = end_date if end_date.tzinfo else end_date.replace(tzinfo=timezone.utc)
+        dated.append((ed, question))
+    dated.sort(key=lambda x: x[0])
+
+    buckets: dict[str, int] = {}
+    resolving_30d = 0
+    for ed, _q in dated:
+        buckets[ed.strftime("%Y-%m")] = buckets.get(ed.strftime("%Y-%m"), 0) + 1
+        if 0 <= (ed - now).days <= 30:
+            resolving_30d += 1
+
+    nearest = None
+    if dated:
+        ed, q = dated[0]
+        nearest = {
+            "question": q,
+            "end_date": ed.date().isoformat(),
+            "days": (ed - now).days,
+        }
+    return {
+        "nearest": nearest,
+        "resolving_30d": resolving_30d,
+        "no_date": no_date,
+        "buckets": buckets,
+    }
 
 
 def get_paper_summary() -> dict[str, Any]:

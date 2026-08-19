@@ -14,25 +14,11 @@ import httpx
 
 TELEGRAM_API = "https://api.telegram.org"
 
-DECISION_EMOJI = {
-    "BET": "🎯",
-    "WATCH": "👀",
-    "SKIP": "⏭",
-    "NEEDS_MORE_RESEARCH": "🔍",
-}
-
 
 def _pct(value: float | None) -> str:
     if value is None:
         return "n/a"
     return f"{value * 100:.1f}%"
-
-
-def _edge_str(edge: float | None) -> str:
-    if edge is None:
-        return "n/a"
-    sign = "+" if edge >= 0 else ""
-    return f"{sign}{edge * 100:.1f}%"
 
 
 def _money(value: float | None) -> str:
@@ -42,7 +28,7 @@ def _money(value: float | None) -> str:
 
 
 def _portfolio_block(summary: dict[str, Any]) -> str:
-    """Operational P&L block: wins/losses, realized + unrealized, net."""
+    """P&L портфеля: выигрыши/проигрыши, реализованный + нереализованный, итог."""
     p = summary.get("portfolio") or {}
     if not p or "error" in p:
         return ""
@@ -56,19 +42,58 @@ def _portfolio_block(summary: dict[str, Any]) -> str:
     net = float(p.get("net_pnl") or 0)
 
     lines = [
-        "💼 <b>Portfolio</b>",
-        f"Open: {open_n} | Closed: {closed_n} ({wins}W / {losses}L)",
-        f"Realized: {_money(realized)} | Unrealized: {_money(unrealized)}"
-        f" | Net: <b>{_money(net)}</b>",
+        "💼 <b>Портфель</b>",
+        f"Открыто: {open_n} · Закрыто: {closed_n} ({wins}П / {losses}М)",
+        f"Реализ.: {_money(realized)} · Нереализ.: {_money(unrealized)}"
+        f" · Итог: <b>{_money(net)}</b>",
     ]
 
     res = summary.get("resolution") or {}
     if res.get("resolved"):
         lines.append(
-            f"✅ Resolved this cycle: {res['resolved']} "
-            f"({res.get('wins', 0)}W / {res.get('losses', 0)}L) "
+            f"✅ Закрыто в этом цикле: {res['resolved']} "
+            f"({res.get('wins', 0)}П / {res.get('losses', 0)}М) "
             f"{_money(res.get('realized_pnl_delta'))}"
         )
+    return "\n".join(lines)
+
+
+def _timeline_block(summary: dict[str, Any]) -> str:
+    """Сроки резолюции: ближайшее закрытие, в этом месяце, без даты."""
+    tl = (summary.get("portfolio") or {}).get("timeline") or {}
+    nearest = tl.get("nearest")
+    if not nearest and not tl.get("no_date"):
+        return ""
+
+    lines = ["⏳ <b>Сроки</b>"]
+    if nearest:
+        q = nearest["question"]
+        if len(q) > 48:
+            q = q[:45] + "…"
+        days = nearest["days"]
+        when = f"через {days} дн" if days >= 0 else f"{-days} дн назад"
+        lines.append(f"Ближайшее: {q} · {nearest['end_date']} ({when})")
+    lines.append(
+        f"В этом месяце: {tl.get('resolving_30d', 0)} · Без даты: {tl.get('no_date', 0)}"
+    )
+    return "\n".join(lines)
+
+
+def _new_bets_block(summary: dict[str, Any]) -> str:
+    """Новые ставки этого цикла (решения, по которым открылась paper-сделка)."""
+    new_bets = [d for d in summary.get("decisions", []) if d.get("paper_trade")]
+    if not new_bets:
+        return "🎯 <b>Новые ставки</b>\nНет"
+
+    lines = [f"🎯 <b>Новые ставки: {len(new_bets)}</b>"]
+    for d in new_bets:
+        q = d.get("question", "рынок")
+        if len(q) > 48:
+            q = q[:45] + "…"
+        pt = d.get("paper_trade") or {}
+        side = pt.get("side") or d.get("recommended_side") or "?"
+        entry = _pct(pt.get("entry_probability"))
+        lines.append(f"• {q} — {side}, вход {entry}")
     return "\n".join(lines)
 
 
@@ -78,92 +103,56 @@ def _failure_hint(error_sample: str | None) -> str:
         return "check API status"
     s = error_sample.lower()
     if "credit balance" in s or "too low" in s:
-        return "Anthropic credits exhausted — top up Plans &amp; Billing"
+        return "Баланс Anthropic исчерпан — пополни Plans &amp; Billing"
     if "429" in s or "rate" in s or "overloaded" in s:
-        return "rate limited / overloaded"
+        return "лимит запросов / перегрузка"
     if "403" in s or "forbidden" in s or "not allowed" in s:
         # Anthropic surfaces an empty balance as 403 as well as via the 400
         # "credit balance too low" message, so point at both.
-        return "API access forbidden (403) — check Anthropic key and balance"
+        return "доступ к API запрещён (403) — проверь ключ и баланс Anthropic"
     if "401" in s or "authentication" in s or "api key" in s or "api_key" in s:
-        return "auth / API key problem"
+        return "проблема авторизации / ключа"
     # Unknown error: HTML-escape the raw snippet so it can't break parse_mode.
     return html.escape(error_sample[:80])
 
 
+_STATUS_RU = {"ok": "ок", "degraded": "деградация", "no_markets": "нет рынков"}
+
+
 def format_experiment_summary(summary: dict[str, Any]) -> str:
     """
-    Compact Telegram summary for experiment runs.
-
-    Header shows key counters. Body shows top-5 decisions by absolute edge.
-    All decisions are always persisted to DB regardless of what is shown here.
+    Сводка цикла для Telegram: новые ставки + сроки резолюции + P&L портфеля.
+    Список всех решений в сообщение не выводится — он целиком в БД / дашборде.
     """
     status = summary.get("status", "unknown")
     duration = summary.get("duration_seconds", 0)
     sync = summary.get("sync") or {}
     markets_synced = sync.get("markets_inserted_or_updated", sync.get("fetched", 0))
     markets_analyzed = summary.get("markets_analyzed", 0)
-    decisions = summary.get("decisions", [])
     analyst_failures = summary.get("analyst_failures", 0)
-
-    bet_count = sum(1 for d in decisions if d.get("decision") == "BET")
-    paper_trades_opened = summary.get("paper_trades_opened", bet_count)
     skipped_recent = len(summary.get("skipped_recent_market_ids", []))
+    cooldown_line = f" · пропущено (кулдаун): {skipped_recent}" if skipped_recent else ""
 
-    skipped_line = f" | Skipped (cooldown): {skipped_recent}" if skipped_recent else ""
-
-    # Degradation banner first — a cycle that "completed" but produced no real
-    # analysis (e.g. exhausted credits) must not look like a normal quiet day.
+    # Баннер деградации — цикл, который «завершился», но не дал анализа
+    # (например, исчерпан баланс), не должен выглядеть обычным тихим днём.
     banner = ""
     if status == "degraded" or analyst_failures:
         hint = _failure_hint(summary.get("analyst_error_sample"))
         banner = (
-            f"⚠️ <b>DEGRADED</b> — analyst failed "
+            f"⚠️ <b>ДЕГРАДАЦИЯ</b> — аналитик упал "
             f"{analyst_failures}/{markets_analyzed}\n{hint}\n\n"
         )
 
     header = (
         f"{banner}"
         f"🤖 <b>Polymarket AI Desk</b>\n"
-        f"Status: <b>{status}</b> | {duration}s\n"
-        f"Synced: {markets_synced} | Analyzed: {markets_analyzed}{skipped_line}\n"
-        f"🎯 BET: {bet_count} | 💵 Paper trades: {paper_trades_opened}"
+        f"Статус: <b>{_STATUS_RU.get(status, status)}</b> · {duration}с\n"
+        f"Синхр.: {markets_synced} · проанализировано: {markets_analyzed}{cooldown_line}"
     )
 
-    portfolio_block = _portfolio_block(summary)
-    portfolio_tail = ("\n\n" + portfolio_block) if portfolio_block else ""
-
-    if not decisions:
-        return header + "\n\nNo actionable markets found." + portfolio_tail
-
-    # Top 5 by absolute edge — most interesting regardless of direction
-    top5 = sorted(decisions, key=lambda d: abs(d.get("edge") or 0), reverse=True)[:5]
-
-    lines = [header, "", "📊 <b>Top decisions by edge:</b>"]
-    for i, d in enumerate(top5, 1):
-        question = d.get("question", "Unknown market")
-        if len(question) > 55:
-            question = question[:52] + "..."
-
-        decision = d.get("decision") or "?"
-        emoji = DECISION_EMOJI.get(decision, "❓")
-        side = d.get("recommended_side") or "?"
-        yes_price = _pct(d.get("yes_price"))
-        consensus = _pct(d.get("consensus_probability"))
-        edge = _edge_str(d.get("edge"))
-        trade_tag = " 💵" if d.get("paper_trade") else ""
-
-        lines.append(
-            f"\n{i}. {question}\n"
-            f"   {yes_price} → {consensus} | Edge {edge}\n"
-            f"   {emoji} <b>{decision}</b>  {side}{trade_tag}"
-        )
-
-    total = len(decisions)
-    if total > 5:
-        lines.append(f"\n…and {total - 5} more saved to DB.")
-
-    return "\n".join(lines) + portfolio_tail
+    blocks = [header, _new_bets_block(summary), _timeline_block(summary),
+              _portfolio_block(summary)]
+    return "\n\n".join(b for b in blocks if b)
 
 
 async def _tg_post(url: str, payload: dict[str, Any]) -> dict[str, Any]:

@@ -352,7 +352,8 @@ bash scripts/uninstall_launchd.sh
 | POST | /notifications/test | Send test Telegram message |
 | GET | /paper/trades | List simulated paper trades |
 | GET | /paper/summary | Paper portfolio summary stats |
-| GET | /paper/portfolio | Portfolio P&L: open/closed, W/L, realized + unrealized + net |
+| GET | /paper/portfolio | Portfolio P&L: open/closed, W/L, realized + unrealized + net, resolution timeline |
+| GET | /dashboard | LAN dashboard (single self-contained HTML page, RU) |
 | POST | /paper/mark-to-market | Compute unrealized PnL from current snapshot prices |
 | POST | /paper/resolve | Close trades whose markets have resolved; compute realized PnL |
 | GET | /analytics/decision-summary | Aggregate decision stats |
