@@ -88,6 +88,8 @@
   .skel{color:var(--faint)}
   @media (max-width:640px){
     .tiles,.funnel{grid-template-columns:repeat(2,1fr)}
+    /* funnel has 5 cells → last one spans full width so no empty tile */
+    .funnel .fcell:last-child{grid-column:1 / -1}
     .hero .big{font-size:40px}
     td.q{max-width:180px}
     .hide-sm{display:none}
