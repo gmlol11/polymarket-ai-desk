@@ -1,0 +1,219 @@
+market_id,polymarket_id,question,category,end_date,closed,final_yes_price,final_snapshot_date,outcome_proxy
+14,553824,Will the Carolina Hurricanes win the 2026 NHL Stanley Cup?,,2026-06-30,f,0.3800,2026-06-09,
+15,553829,Will the Vegas Golden Knights win the 2026 NHL Stanley Cup?,,2026-06-30,f,0.6240,2026-06-09,
+16,553858,Will the New York Knicks win the 2026 NBA Finals?,,2026-07-01,f,0.6270,2026-06-09,
+17,553866,Will the San Antonio Spurs win the 2026 NBA Finals?,,2026-07-01,f,0.3810,2026-06-09,
+19,558934,Will Spain win the 2026 FIFA World Cup?,,2026-07-20,f,0.5910,2026-07-19,
+20,558935,Will England win the 2026 FIFA World Cup?,,2026-07-20,f,0.2280,2026-07-15,
+21,558936,Will France win the 2026 FIFA World Cup?,,2026-07-20,f,0.3890,2026-07-13,
+42,558937,Will Brazil win the 2026 FIFA World Cup?,,2026-07-20,f,0.0670,2026-07-05,
+43,558938,Will Argentina win the 2026 FIFA World Cup?,,2026-07-20,f,0.4100,2026-07-19,
+44,558939,Will Germany win the 2026 FIFA World Cup?,,2026-07-20,f,0.0400,2026-06-29,
+45,558940,Will Portugal win the 2026 FIFA World Cup?,,2026-07-20,f,0.0610,2026-07-06,
+46,558941,Will Netherlands win the 2026 FIFA World Cup?,,2026-07-20,f,0.0010,2026-06-30,0
+53,558951,Will Norway win the 2026 FIFA World Cup?,,2026-07-20,f,0.0590,2026-07-11,
+337,559651,Xi Jinping out before 2027?,,2027-01-01,f,0.0290,2026-10-15,0
+338,559652,Will Gavin Newsom win the 2028 Democratic presidential nomination?,,2028-11-08,f,0.1550,2026-10-15,
+339,559653,Will Alexandria Ocasio-Cortez win the 2028 Democratic presidential nomination?,,2028-11-08,f,0.1690,2026-10-15,
+340,559654,Will Pete Buttigieg win the 2028 Democratic presidential nomination?,,2028-11-08,f,0.0510,2026-10-15,
+341,559655,Will Josh Shapiro win the 2028 Democratic presidential nomination?,,2028-11-08,f,0.0600,2026-10-15,
+344,559658,Will Kamala Harris win the 2028 Democratic presidential nomination?,,2028-11-08,f,0.0680,2026-10-15,
+347,559661,Will Jon Ossoff win the 2028 Democratic presidential nomination?,,2028-11-08,f,0.1390,2026-10-15,
+483,560317,"Putin out as President of Russia by December 31, 2026?",,2027-01-01,f,0.0370,2026-10-15,
+484,561229,Will JD Vance win the 2028 US Presidential Election?,,2028-11-08,f,0.2220,2026-10-15,
+485,561230,Will Gavin Newsom win the 2028 US Presidential Election?,,2028-11-08,f,0.0910,2026-10-15,
+486,561231,Will Alexandria Ocasio-Cortez win the 2028 US Presidential Election?,,2028-11-08,f,0.1320,2026-10-15,
+489,561234,Will Marco Rubio win the 2028 US Presidential Election?,,2028-11-08,f,0.0790,2026-10-15,
+494,561239,Will Kamala Harris win the 2028 US Presidential Election?,,2028-11-08,f,0.0420,2026-10-15,
+516,561261,Will Jon Ossoff win the 2028 US Presidential Election?,,2028-11-08,f,0.0980,2026-10-15,
+521,561974,Will J.D. Vance win the 2028 Republican presidential nomination?,,2028-11-08,f,0.4850,2026-10-15,
+522,561975,Will Marco Rubio win the 2028 Republican presidential nomination?,,2028-11-08,f,0.1420,2026-10-15,
+543,561996,Will Tucker Carlson win the 2028 Republican presidential nomination?,,2028-11-08,f,0.0320,2026-10-15,
+555,562793,Will the Democratic Party control the Senate after the 2026 Midterm elections?,,2026-11-04,f,0.6400,2026-10-15,
+556,562794,Will the Republican Party control the Senate after the 2026 Midterm elections?,,2026-11-04,f,0.3800,2026-10-15,
+557,562802,Will the Democratic Party control the House after the 2026 Midterm elections?,,2026-11-04,f,0.9100,2026-10-15,
+558,562803,Will the Republican Party control the House after the 2026 Midterm elections?,,2026-11-04,f,0.1000,2026-10-15,
+559,562828,"2026 Balance of Power: D Senate, D House",,2026-11-04,f,0.6300,2026-10-15,
+561,562830,"2026 Balance of Power: R Senate, D House",,2026-11-04,f,0.2900,2026-10-15,
+562,562831,"2026 Balance of Power: R Senate, R House",,2026-11-04,f,0.0900,2026-10-15,
+564,563650,"SCOTUS accepts sports event contract case by July 31, 2026?     ",,2026-07-31,f,0.0020,2026-07-31,0
+565,565064,Will the Republicans win the 2028 US Presidential Election?,,2028-11-08,f,0.3500,2026-10-15,
+566,565065,Will the Democrats win the 2028 US Presidential Election?,,2028-11-08,f,0.6400,2026-10-15,
+567,566760,Will Trump pardon Ghislaine Maxwell by end of 2026?,,2027-01-01,f,0.0540,2026-10-15,
+568,567621,Will China invade Taiwan by end of 2026?,,2027-01-01,f,0.0220,2026-10-15,0
+569,567688,Netanyahu out by end of 2026?,,2027-01-01,f,0.3900,2026-10-15,
+570,567689,Zelenskyy out as Ukraine president by end of 2026?,,2027-01-01,f,0.0800,2026-10-15,
+571,567690,"Erdoğan out by December 31, 2026?",,2027-01-01,f,0.0390,2026-10-15,
+572,568116,"Will Trump be impeached by December 31, 2026?",,2027-01-01,f,0.0240,2026-10-15,0
+573,568117,"Will Trump resign by December 31, 2026?",,2027-01-01,f,0.0190,2026-10-15,0
+583,569366,Will Abelardo de la Espriella  win the 2026 Colombian presidential election?,,2026-06-21,f,0.9980,2026-06-24,1
+585,569368,Will Ivan Cepeda Castro win the 2026 Colombian presidential election?,,2026-06-21,f,0.0050,2026-06-24,0
+606,572133,No one announced as next James Bond?,,2026-06-30,f,1.0000,2026-07-01,1
+609,573656,"Will Bitcoin hit $150k by December 31, 2026?",,2027-01-01,f,0.0280,2026-10-15,0
+612,593972,Will Bernie endorse James Talarico for TX-Sen by Nov 2 2026 ET?,,2026-11-03,f,0.2900,2026-10-15,
+613,593973,Will Bernie endorse Kshama Sawant for WA-09 by Nov 2 2026 ET?,,2026-11-03,f,0.0170,2026-10-15,0
+614,593974,Will Bernie endorse Dan Osborn for NE-Sen by Nov 2 2026 ET?,,2026-11-03,f,0.1200,2026-10-15,
+615,593975,Will Bernie endorse Antonio Delgado for NY-Gov by Nov 2 2026 ET?,,2026-11-03,f,0.0310,2026-10-15,
+616,593977,Will Bernie endorse Alan Grayson for FL-Sen Nov 2 2026 ET?,,2026-11-30,f,0.3580,2026-10-15,
+617,593978,Will Bernie endorse Zach Wahls for IA-Sen Nov 2 2026 ET?,,2026-11-30,f,0.0370,2026-10-15,
+621,597967,"Starmer out by June 30, 2026?",,2026-06-30,f,0.9100,2026-06-22,
+623,599303,Will Mallory McMorrow win the 2026 Michigan Democratic Primary?,,2026-08-04,f,0.0010,2026-08-05,0
+624,599304,Will Haley Stevens win the 2026 Michigan Democratic Primary?,,2026-08-04,f,0.0040,2026-08-05,0
+625,599305,Will Abdul El-Sayed win the 2026 Michigan Democratic Primary?,,2026-08-04,f,0.9980,2026-08-05,1
+650,601819,Will Luiz Inácio Lula da Silva win the 2026 Brazilian presidential election?,,2026-10-05,f,0.1700,2026-10-15,
+656,601825,Will Renan Santos win the 2026 Brazilian presidential election?,,2026-10-05,f,0.0010,2026-10-05,0
+657,601826,Will Flávio Bolsonaro win the 2026 Brazilian presidential election?,,2026-10-05,f,0.8300,2026-10-15,
+666,601920,Will any presidential candidate win outright in the first round of the Brazil election?,,2026-10-05,f,0.0680,2026-10-04,
+668,601922,Will Luiz Inácio Lula da Silva qualify for Brazil's presidential runoff?,,2026-10-05,f,0.9650,2026-10-04,
+670,601924,Will Fernando Haddad qualify for Brazil's presidential runoff?,,2026-10-05,f,0.0020,2026-10-04,0
+673,608362,Will OpenAI’s market cap be less than $500B at market close on IPO day?,,2027-01-01,f,0.0060,2026-10-15,0
+674,608363,Will OpenAI’s market cap be between $500B and $750B at market close on IPO day?,,2027-01-01,f,0.0060,2026-10-15,0
+675,608364,Will OpenAI’s market cap be between $750B and $1T at market close on IPO day?,,2027-01-01,f,0.0070,2026-10-15,0
+676,608365,Will OpenAI’s market cap be between $1T and $1.25T at market close on IPO day?,,2027-01-01,f,0.0040,2026-10-15,0
+677,608366,Will OpenAI’s market cap be between $1.25T and $1.5T at market close on IPO day?,,2027-01-01,f,0.0040,2026-10-15,0
+678,608367,Will OpenAI’s market cap be $1.5T or greater at market close on IPO day?,,2027-01-01,f,0.0130,2026-10-15,0
+679,608368,"Will OpenAI not IPO by December 31, 2026?",,2027-01-01,f,0.9570,2026-10-15,
+720,608540,Will Kylian Mbappé win the 2026 Ballon d'Or?,,2027-01-01,f,0.0380,2026-10-15,
+721,608541,Will Erling Haaland win the 2026 Ballon d'Or?,,2027-01-01,f,0.0020,2026-10-15,0
+722,608542,Will Jude Bellingham win the 2026 Ballon d'Or?,,2027-01-01,f,0.0010,2026-10-15,0
+723,608543,Will Ousmane Dembélé win the 2026 Ballon d'Or?,,2027-01-01,f,0.0030,2026-10-15,0
+725,608545,Will Lamine Yamal win the 2026 Ballon d'Or?,,2027-01-01,f,0.2960,2026-10-15,
+727,608547,Will Harry Kane win the 2026 Ballon d'Or?,,2027-01-01,f,0.6310,2026-10-15,
+730,608551,Will Michael Olise win the 2026 Ballon d'Or?,,2027-01-01,f,0.0030,2026-10-15,0
+732,608553,Will Khvicha Kvaratskhelia win the 2026 Ballon d'Or?,,2027-01-01,f,0.0050,2026-10-15,0
+733,608554,Will Vitinha win the 2026 Ballon d'Or?,,2027-01-01,f,0.0010,2026-10-15,0
+744,609655,US recession by end of 2026?,,2027-01-31,f,0.0800,2026-10-15,
+754,616902,Will no Fed rate cuts happen in 2026?,,2027-01-01,f,0.9690,2026-10-15,
+755,616903,Will 1 Fed rate cut happen in 2026?,,2027-01-01,f,0.0170,2026-10-15,0
+756,616904,Will 2 Fed rate cuts happen in 2026?,,2027-01-01,f,0.0080,2026-10-15,0
+767,618454,Opensea FDV above $500M one day after launch?,,2027-01-01,f,0.1280,2026-10-15,
+768,618455,Opensea FDV above $1B one day after launch?,,2027-01-01,f,0.1000,2026-10-15,
+769,618456,Opensea FDV above $3B one day after launch?,,2027-01-01,f,0.0450,2026-10-15,
+785,620335,"Aziz Akhannouch out as Morocco Prime Minister by December 31, 2026?",,2027-01-01,f,0.9820,2026-10-15,1
+786,620682,Opensea FDV above $5B one day after launch?,,2027-01-01,f,0.0380,2026-10-15,
+787,622738,"Will Hyperliquid perform an airdrop by December 31, 2026? ",,2027-01-01,f,0.1000,2026-10-15,
+793,628940,Will Steve Hilton win the California Governor Election in 2026?,,2026-11-04,f,0.0390,2026-10-15,
+794,628941,Will Xavier Becerra win the California Governor Election in 2026?,,2026-11-04,f,0.9620,2026-10-15,
+812,629030,Will Karen Bass win the 2026 Los Angeles mayoral election?,,2026-06-03,f,0.4600,2026-10-15,
+821,629040,Will Nithya Raman win the 2026 Los Angeles mayoral election?,,2026-06-03,f,0.5410,2026-10-15,
+823,629183,Will the Democrats win the Arizona governor race in 2026?,,2026-11-04,f,0.8900,2026-10-15,
+824,629184,Will the Republicans win the Arizona governor race in 2026?,,2026-11-04,f,0.1200,2026-10-15,
+834,629324,Will the Democrats win the Florida governor race in 2026?,,2026-11-04,f,0.2100,2026-10-15,
+835,629325,Will the Republicans win the Florida governor race in 2026?,,2026-11-04,f,0.8000,2026-10-15,
+836,629337,Will the Democrats win the Georgia governor race in 2026?,,2026-11-04,f,0.4900,2026-10-15,
+837,629338,Will the Republicans win the Georgia governor race in 2026?,,2026-11-04,f,0.5200,2026-10-15,
+844,629397,Will the Democrats win the Iowa governor race in 2026?,,2026-11-04,f,0.9100,2026-10-15,
+845,629398,Will the Republicans win the Iowa governor race in 2026?,,2026-11-04,f,0.1000,2026-10-15,
+846,629412,Will the Democrats win the Kansas governor race in 2026?,,2026-11-04,f,0.2400,2026-10-15,
+847,629413,Will the Republicans win the Kansas governor race in 2026?,,2026-11-04,f,0.7500,2026-10-15,
+848,629425,Will the Democrats win the Maine governor race in 2026?,,2026-11-04,f,0.9610,2026-10-15,
+854,629464,Will the Democrats win the Michigan governor race in 2026?,,2026-11-04,f,0.9550,2026-10-15,
+855,629465,Will the Republicans win the Michigan governor race in 2026?,,2026-11-04,f,0.0500,2026-10-15,
+857,629477,Will the Democrats win the Minnesota governor race in 2026?,,2026-11-04,f,0.9600,2026-10-15,
+858,629478,Will the Republicans win the Minnesota governor race in 2026?,,2026-11-04,f,0.0520,2026-10-15,
+861,629505,Will the Democrats win the Nevada governor race in 2026?,,2026-11-04,f,0.5300,2026-10-15,
+862,629506,Will the Republicans win the Nevada governor race in 2026?,,2026-11-04,f,0.4800,2026-10-15,
+865,629531,Will the Democrats win the New Mexico governor race in 2026?,,2026-11-04,f,0.9400,2026-10-15,
+867,629544,Will the Democrats win the New York governor race in 2026?,,2026-11-04,f,0.9480,2026-10-15,
+868,629545,Will the Republicans win the New York governor race in 2026?,,2026-11-04,f,0.0580,2026-10-15,
+869,629557,Will the Democrats win the Ohio governor race in 2026?,,2026-11-04,f,0.7200,2026-10-15,
+870,629558,Will the Republicans win the Ohio governor race in 2026?,,2026-11-04,f,0.2900,2026-10-15,
+871,629570,Will the Democrats win the Oklahoma governor race in 2026?,,2026-11-04,f,0.0900,2026-10-15,
+3228,608565,Will Lionel Messi win the 2026 Ballon d'Or?,,2027-01-01,f,0.0270,2026-10-15,0
+3357,629571,Will the Republicans win the Oklahoma governor race in 2026?,,2026-11-04,f,0.9100,2026-10-15,
+3358,629583,Will the Democrats win the Oregon governor race in 2026?,,2026-11-04,f,0.7600,2026-10-15,
+3359,629584,Will the Republicans win the Oregon governor race in 2026?,,2026-11-04,f,0.2400,2026-10-15,
+3361,629615,Will the Republicans win the Pennsylvania governor race in 2026?,,2026-11-04,f,0.0270,2026-10-15,0
+3362,629627,Will the Democrats win the Rhode Island governor race in 2026?,,2026-11-04,f,0.9780,2026-10-15,1
+3371,629690,Will the Democrats win the Texas governor race in 2026?,,2026-11-04,f,0.2300,2026-10-15,
+4871,629691,Will the Republicans win the Texas governor race in 2026?,,2026-11-04,f,0.7810,2026-10-15,
+5371,629707,Will the Democrats win the Vermont governor race in 2026?,,2026-11-04,f,0.2500,2026-10-15,
+5871,629708,Will the Republicans win the Vermont governor race in 2026?,,2026-11-04,f,0.7500,2026-10-15,
+6371,629720,Will the Democrats win the Wisconsin governor race in 2026?,,2026-11-04,f,0.8200,2026-10-15,
+6869,629721,Will the Republicans win the Wisconsin governor race in 2026?,,2026-11-04,f,0.2000,2026-10-15,
+7359,630667,Will the Republicans win the Colorado Senate race in 2026?,,2026-11-04,f,0.0210,2026-10-15,0
+7362,630692,Will the Democrats win the Georgia Senate race in 2026?,,2026-11-04,f,0.9650,2026-10-15,
+7363,630693,Will the Republicans win the Georgia Senate race in 2026?,,2026-11-04,f,0.0400,2026-10-15,
+7368,630733,Will the Democrats win the Iowa Senate race in 2026?,,2026-11-04,f,0.4200,2026-10-15,
+7369,630734,Will the Republicans win the Iowa Senate race in 2026?,,2026-11-04,f,0.5800,2026-10-15,
+7370,630746,Will the Democrats win the Kansas Senate race in 2026?,,2026-11-04,f,0.3800,2026-10-15,
+7371,630747,Will the Republicans win the Kansas Senate race in 2026?,,2026-11-04,f,0.6300,2026-10-15,
+8370,630760,Will the Republicans win the Kentucky Senate race in 2026?,,2026-11-04,f,0.9690,2026-10-15,
+8371,630772,Will the Democrats win the Maine Senate race in 2026?,,2026-11-04,f,0.6000,2026-10-15,
+8867,630773,Will the Republicans win the Maine Senate race in 2026?,,2026-11-04,f,0.4200,2026-10-15,
+8870,630805,Will the Democrats win the Michigan Senate race in 2026?,,2026-11-04,f,0.7100,2026-10-15,
+8871,630806,Will the Republicans win the Michigan Senate race in 2026?,,2026-11-04,f,0.3100,2026-10-15,
+9370,630818,Will the Democrats win the Minnesota Senate race in 2026?,,2026-11-04,f,0.8800,2026-10-15,
+9371,630819,Will the Republicans win the Minnesota Senate race in 2026?,,2026-11-04,f,0.1300,2026-10-15,
+9871,630832,Will the Republicans win the Montana Senate race in 2026?,,2026-11-04,f,0.9400,2026-10-15,
+10371,630833,Will an Independent win the Montana Senate race in 2026?,,2026-11-04,f,0.0710,2026-10-15,
+10854,630844,Will the Democrats win the New Hampshire Senate race in 2026?,,2026-11-04,f,0.8900,2026-10-15,
+10855,630845,Will the Republicans win the New Hampshire Senate race in 2026?,,2026-11-04,f,0.1300,2026-10-15,
+10860,630883,Will the Democrats win the North Carolina Senate race in 2026?,,2026-11-04,f,0.9630,2026-10-15,
+10861,630884,Will the Republicans win the North Carolina Senate race in 2026?,,2026-11-04,f,0.0470,2026-10-15,
+10866,630924,Will the Democrats win the South Carolina Senate race in 2026?,,2026-11-04,f,0.1600,2026-10-15,
+10867,630925,Will the Republicans win the South Carolina Senate race in 2026?,,2026-11-04,f,0.8500,2026-10-15,
+10871,630951,Will the Republicans win the Tennessee Senate race in 2026?,,2026-11-04,f,0.9630,2026-10-15,
+11291,630963,Will the Democrats win the Texas Senate race in 2026?,,2026-11-04,f,0.6400,2026-10-15,
+11292,630964,Will the Republicans win the Texas Senate race in 2026?,,2026-11-04,f,0.3800,2026-10-15,
+11299,631017,Will the Democrats win the Mississippi Senate race in 2026?,,2026-11-04,f,0.1000,2026-10-15,
+11303,631044,Will the Democrats win the Florida Senate race in 2026?,,2026-11-04,f,0.1000,2026-10-15,
+11304,631045,Will the Republicans win the Florida Senate race in 2026?,,2026-11-04,f,0.9100,2026-10-15,
+11305,631057,Will the Democrats win the Ohio Senate race in 2026?,,2026-11-04,f,0.6200,2026-10-15,
+11306,631058,Will the Republicans win the Ohio Senate race in 2026?,,2026-11-04,f,0.3900,2026-10-15,
+11307,634878,Will the Democrats win the Louisiana Senate race in 2026?,,2026-11-04,f,0.0700,2026-10-15,
+11310,634892,Will the Republicans win the Nebraska Senate race in 2026?,,2026-11-04,f,0.7300,2026-10-15,
+11311,634893,Will an independent win the Nebraska Senate race in 2026?,,2026-11-04,f,0.2800,2026-10-15,
+11312,634974,Will Dan Sullivan win the Alaska Senate race in 2026?,,2026-11-04,f,0.2700,2026-10-15,
+11314,634976,Will Mary Peltola win the Alaska Senate race in 2026?,,2026-11-04,f,0.7400,2026-10-15,
+11326,635012,Will Bernadette Wilson win the 2026 Alaska governor election?,,2026-11-04,f,0.2200,2026-10-15,
+11328,635014,Will Tom Begich win the 2026 Alaska governor election?,,2026-11-04,f,0.0010,2026-10-15,0
+11330,635016,Will Jonathan Kreiss-Tomkins win the 2026 Alaska governor election?,,2026-11-04,f,0.7670,2026-10-15,
+11339,637002,Will Donald Trump win the Nobel Peace Prize in 2026?,,2027-04-01,f,0.0050,2026-10-09,0
+11340,637003,Will Pope Leo XIV win the Nobel Peace Prize in 2026?,,2027-04-01,f,0.0090,2026-10-09,0
+11341,637004,Will Yulia Navalnaya win the Nobel Peace Prize in 2026?,,2027-04-01,f,0.3490,2026-10-09,
+11345,637008,Will UNRWA win the Nobel Peace Prize in 2026?,,2027-04-01,f,0.0170,2026-10-09,0
+11346,637009,Will the International Court of Justice win the Nobel Peace Prize in 2026?,,2027-04-01,f,0.0750,2026-10-09,
+11348,637011,Will Volodymyr Zelenskyy win the Nobel Peace Prize in 2026?,,2027-04-01,f,0.0090,2026-10-09,0
+11359,637456,Ink FDV above $500M one day after launch?,,2027-01-01,f,0.1700,2026-10-15,
+11360,637457,Ink FDV above $1B one day after launch?,,2027-01-01,f,0.0800,2026-10-15,
+11361,637910,Mitch McConnell steps down from Senate before his term ends?,,2027-01-04,f,0.0700,2026-10-15,
+11362,648383,Billionaire one-time wealth tax passes in California election 2026?,,2026-11-04,f,0.2500,2026-10-15,
+11364,651395,"Will Ari Weinstein leave OpenAI by December 31, 2026?",,2027-01-01,f,0.0980,2026-10-15,
+11366,653788,OpenAI announces it has achieved AGI before 2027?,,2027-01-01,f,0.1300,2026-10-15,
+11367,656312,Will OpenAI IPO by December 31 2026?,,2027-01-01,f,0.0430,2026-10-15,
+11368,656313,OpenAI $1t+ IPO before 2027?,,2027-01-01,f,0.0330,2026-10-15,
+11369,663583,Will the Iranian regime fall before 2027?,,2027-01-01,f,0.0600,2026-10-15,
+11370,664045,Will Mamdani freeze NYC rents before 2027?,,2027-01-01,f,0.9690,2026-10-05,
+12367,665205,US national Bitcoin reserve before 2027?,,2027-01-01,f,0.0600,2026-10-15,
+12368,665218,Israel and Saudi Arabia normalize relations before 2027?,,2027-01-01,f,0.0630,2026-10-15,
+12369,665224,Ukraine signs peace deal with Russia before 2027?,,2027-01-01,f,0.0800,2026-10-15,
+12370,665243,NATO article 5 before 2027?,,2027-01-01,f,0.0570,2026-10-15,
+12371,665246,Yoon out of custody before 2027?,,2027-01-01,f,0.0490,2026-10-15,
+13370,665260,Will Donald Trump visit Israel in 2026?,,2027-01-02,f,0.0700,2026-10-15,
+13870,665264,Will Donald Trump visit Japan in 2026?,,2026-12-31,f,0.3100,2026-10-15,
+13871,665265,Will Donald Trump visit Germany in 2026?,,2027-01-02,f,0.1700,2026-10-15,
+14371,665266,Will Donald Trump visit South Korea in 2026?,,2026-12-31,f,0.1800,2026-10-15,
+19596,608566,Will Rodri win the 2026 Ballon d'Or?,,2027-01-01,f,0.0060,2026-10-15,0
+45833,637022,Will Sudan's Emergency Response Rooms win the Nobel Peace Prize in 2026?,,2026-10-10,f,0.1490,2026-10-09,
+45836,637025,Will Committee to Protect Journalists win the Nobel Peace Prize in 2026?,,2026-10-10,f,0.0220,2026-10-09,0
+45842,637031,Will Save the Children win the Nobel Peace Prize in 2026?,,2026-10-10,f,0.0780,2026-10-09,
+58835,665327,Will Italy recognize Palestine before 2027?,,2027-01-01,f,0.1300,2026-10-15,
+58836,665328,Will The Netherlands recognize Palestine before 2027?,,2027-01-01,f,0.1100,2026-10-15,
+58837,665329,Will Japan recognize Palestine before 2027?,,2027-01-01,f,0.0700,2026-10-15,
+58838,665330,Will Germany recognize Palestine before 2027?,,2027-01-01,f,0.0590,2026-10-15,
+58839,665331,Will Belgium recognize Palestine before 2027?,,2027-01-01,f,0.1500,2026-10-15,
+58840,665332,Will Finland recognize Palestine before 2027?,,2027-01-01,f,0.1200,2026-10-15,
+58841,665333,Will Austria recognize Palestine before 2027?,,2027-01-01,f,0.0550,2026-10-15,
+58842,665334,Will Greece recognize Palestine before 2027?,,2027-01-01,f,0.0710,2026-10-15,
+58843,665335,Will New Zealand recognize Palestine before 2027?,,2027-01-01,f,0.1100,2026-10-15,
+58844,665353,Ukraine agrees not to join NATO before 2027? ,,2027-01-01,f,0.0620,2026-10-15,
+58846,665359,"Poilievre out as leader of Conservatives by December 31, 2026?",,2027-01-01,f,0.1300,2026-10-15,
+58848,665363,Lee Jae-myung arrested before 2027?,,2027-01-01,f,0.0510,2026-10-15,
+58854,665374,Will the U.S. invade Iran before 2027?,,2027-01-01,f,0.1700,2026-10-15,
+58861,665427,Will a new country join the Abraham Accords before 2027?,,2027-01-01,f,0.1310,2026-10-15,
+58863,665453,Obama federally charged before 2027?,,2027-01-01,f,0.0620,2026-10-15,
+58868,665470,Will Oman join the Abraham Accords before 2027?,,2027-01-01,f,0.0550,2026-10-15,
+58869,665471,Will Kuwait join the Abraham Accords before 2027?,,2027-01-01,f,0.0800,2026-10-15,
+58870,665472,Will Syria join the Abraham Accords before 2027?,,2027-01-01,f,0.0740,2026-10-15,
+58871,665473,Will Lebanon join the Abraham Accords before 2027?,,2027-01-01,f,0.0500,2026-10-15,

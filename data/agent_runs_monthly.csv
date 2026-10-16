@@ -1,0 +1,11 @@
+agent_name,month,runs,ok,err_no_credits,err_geo_block,err_network,err_invalid_key,err_overloaded,err_bad_output,err_other
+claude_analyst,2026-06,450,246,165,0,25,0,12,2,0
+claude_analyst,2026-07,800,475,0,300,25,0,0,0,0
+claude_analyst,2026-08,800,725,0,0,75,0,0,0,0
+claude_analyst,2026-09,725,668,57,0,0,0,0,0,0
+claude_analyst,2026-10,350,42,283,0,25,0,0,0,0
+openai_challenger,2026-06,450,425,0,0,25,0,0,0,0
+openai_challenger,2026-07,800,475,0,300,25,0,0,0,0
+openai_challenger,2026-08,799,724,0,0,75,0,0,0,0
+openai_challenger,2026-09,725,76,649,0,0,0,0,0,0
+openai_challenger,2026-10,350,0,300,0,25,25,0,0,0

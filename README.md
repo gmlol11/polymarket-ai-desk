@@ -1,5 +1,9 @@
 # Polymarket AI Desk
 
+> **Статус: эксперимент завершён** (8 июня – 16 октября 2026, без реальных денег).
+> Итог: на рынках с известным исходом рыночная цена предсказывала точнее, чем агенты, — преимущества не найдено.
+> Подробности — [RESULTS.md](RESULTS.md), выводы для повторения — [RECOMMENDATIONS.md](RECOMMENDATIONS.md), данные — [`data/`](data).
+
 Multi-agent pipeline for analyzing Polymarket prediction markets.
 
 ## Stack
